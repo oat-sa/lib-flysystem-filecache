@@ -129,7 +129,8 @@ class DualStorageAdapter extends AbstractAdapter
         
         $result = $this->remoteStorage->readStream($path);
         if($result !== false) {
-            $this->localStorage->writeStream($path , $result['stream'] , $this->localConfig);
+            $resource = $result['stream'];
+            $this->localStorage->writeStream($path , $resource , $this->localConfig);
         }
         return $result;
     }
@@ -232,7 +233,7 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        $localResource = &$resource;
+        $localResource = $resource;
         $this->localStorage->writeStream($path, $localResource, $config);
         return $this->remoteStorage->writeStream($path, $resource, $config);
     }
