@@ -17,7 +17,7 @@
  * Copyright (c) 2016 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  *
  */
-namespace oat\libFlysystemFilecache\model\flysystem;
+namespace oat\flysystem\Adapter;
 use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
 
@@ -124,13 +124,14 @@ class DualStorageAdapter extends AbstractAdapter
     {
         
         if(($result = $this->localStorage->readStream($path)) !== false) {
-            return $result;
+            if(is_resource($result['stream'])) {
+                return $result;
+            }
         }
         
         $result = $this->remoteStorage->readStream($path);
-        if($result !== false) {
-            $resource = $result['stream'];
-            $this->localStorage->writeStream($path , $resource , $this->localConfig);
+        if($result !== false) { 
+            $result = $this->localStorage->writeStream($path , $result['stream'] , $this->localConfig);
         }
         return $result;
     }
@@ -232,10 +233,10 @@ class DualStorageAdapter extends AbstractAdapter
      * @return array|false false on failure file meta data on success
      */
     public function writeStream($path, $resource, Config $config)
-    {
-        $localResource = $resource;
-        $this->localStorage->writeStream($path, $localResource, $config);
-        return $this->remoteStorage->writeStream($path, $resource, $config);
+    {   
+        $result =$this->remoteStorage->writeStream($path, $resource, $config);
+        $this->localStorage->writeStream($path, $this->cloneResource($resource), $config);
+        return $result;
     }
 
     /**
@@ -365,8 +366,15 @@ class DualStorageAdapter extends AbstractAdapter
         return call_user_func_array([$this->remoteStorage , $method] , $args);
 
     }
+    
+    protected function cloneResource($resource) {
+        $clone = tmpfile();
+        stream_copy_to_stream($resource, $clone);
+        var_dump([$resource, $clone]);
+        return $clone;
+    }
 
-    /**
+        /**
      * call method on both storage
      * return remote result
      * @param $method

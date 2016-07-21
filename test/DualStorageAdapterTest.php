@@ -6,10 +6,10 @@
  * Time: 10:12
  */
 
-namespace oat\libFlysystemFilecache\test\model\flysystem;
+namespace oat\libFlysystemFilecache\test;
 
 
-use oat\tao\model\flysystem\DualStorageAdapter;
+use oat\libFlysystemFilecache\Flysystem\DualStorageAdapter;
 use oat\tao\test\TaoPhpUnitTestRunner;
 
 class DualStorageAdapterTest extends TaoPhpUnitTestRunner

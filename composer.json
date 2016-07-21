@@ -52,7 +52,7 @@
 	"minimum-stability" : "dev",
 	"autoload" : {
 		"psr-4" : {
-			"oat\\libFlysystemFilecache\\model\\" : "models/classes/",
+			"oat\\flysystem\\Adapter\\" : "src",
 			"oat\\libFlysystemFilecache\\test\\" : "test"
 		}
 	}
