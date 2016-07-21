@@ -1,6 +1,7 @@
 flysystem Adapter
 ========
 
+Dual Storage Adapter for league/flysystem
 Use to keep a cached local copy of each read of remote file.
 
 It use two storage, a remote location and a local location.
@@ -14,3 +15,6 @@ $local = new League\Flysystem\Adapter\Local(...);
 $localConfig = new \League\Flysystem\Config(); 
 
 $adapter = new oat\LibFlysystemFilecache\model\flysystem\DualStorageAdapter($remote, $local, $localConfig);
+
+
+see http://flysystem.thephpleague.com/ to configure your adapters

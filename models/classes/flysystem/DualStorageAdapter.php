@@ -26,7 +26,7 @@ use League\Flysystem\Config;
  * use two storage, a remote and a local
  * local has priority on read operation
  *
- * @package oat\tao\model\extension
+ * @package oat\libFlysystemFilecache\model\flysystem
  */
 class DualStorageAdapter extends AbstractAdapter
 {
