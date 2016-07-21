@@ -122,9 +122,11 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function readStream($path)
     {
+        
         if(($result = $this->localStorage->readStream($path)) !== false) {
             return $result;
         }
+        
         $result = $this->remoteStorage->readStream($path);
         if($result !== false) {
             $this->localStorage->writeStream($path , $result['stream'] , $this->localConfig);
@@ -230,7 +232,9 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function writeStream($path, $resource, Config $config)
     {
-        return $this->callOnBoth('writeStream' , [$path, $resource, $config]);
+        $localResource = &$resource;
+        $this->localConfig->writeStream($path, $localResource, $config);
+        return $this->remoteStorage->writeStream($path, $resource, $config);
     }
 
     /**
@@ -348,7 +352,12 @@ class DualStorageAdapter extends AbstractAdapter
      */
     protected function callWithFallback($method, array $args = [])
     {
-        $result = call_user_func_array([$this->localStorage , $method] , $args);
+ 
+        try  {
+            $result = call_user_func_array([$this->localStorage , $method] , $args);
+        } catch (\Exception $e) {
+            $result = false;
+        }
         if ($result !== false) {
             return $result;
         }
