@@ -42,9 +42,6 @@
                 "cache"
 	],
 	"type" : "library",
-	"extra" : {
-		"tao-extension-name" : "libFlysystemFilecache"
-	},
 	"require" : {
 		"php" : ">=5.5",
 		"league/flysystem" : "^1.0.25"
