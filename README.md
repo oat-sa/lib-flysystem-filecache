@@ -12,9 +12,10 @@ usage :
 
 $remote = new League\Flysystem\AwsS3V3\AwsS3Adapter(...);
 $local = new League\Flysystem\Adapter\Local(...);
-$localConfig = new \League\Flysystem\Config(); 
 
-$adapter = new oat\LibFlysystemFilecache\model\flysystem\DualStorageAdapter($remote, $local, $localConfig);
+$autosave = true;
+
+$adapter = new oat\LibFlysystemFilecache\model\flysystem\DualStorageAdapter($remote, $local ,autosave);
 
 
 see http://flysystem.thephpleague.com/ to configure your adapters

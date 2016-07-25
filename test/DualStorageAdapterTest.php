@@ -23,15 +23,13 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
 
         $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
         
         $autosave   = true;
         
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config , $autosave);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $autosave);
         
         $this->assertSame($remoteMock, $this->getInaccessibleProperty($this->instance, 'remoteStorage'));
         $this->assertSame($localMock, $this->getInaccessibleProperty($this->instance, 'localStorage'));
-        $this->assertSame($config, $this->getInaccessibleProperty($this->instance, 'localConfig'));
         $this->assertSame($autosave, $this->getInaccessibleProperty($this->instance, 'autosave'));
 
     }
@@ -73,10 +71,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
             $expected = $remoteResult;
         }
         $remoteMock = $remoteProphet->reveal();
-        
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
         
         $this->assertSame($expected , $this->invokeProtectedMethod($this->instance , 'callWithFallback' , [$method , $args]));
 
@@ -85,13 +81,11 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
     public function testGetters() {
         $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock);
         
         $this->assertSame($remoteMock, $this->instance->getRemoteStorage());
         $this->assertSame($localMock, $this->instance->getLocalStorage());
-        $this->assertSame($config, $this->instance->getLocalConfig());
     }
     
     public function autosaveProvider() {
@@ -114,9 +108,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         
         $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
         
         $this->assertSame($this->instance, $this->instance->setAutosave($value));
         $this->assertSame($expected, $this->instance->getAutosave());
@@ -155,10 +148,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $expected = $remoteResult;
         
         $remoteMock = $remoteProphet->reveal();
-        
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
         
         $this->assertSame($expected , $this->invokeProtectedMethod($this->instance , 'callOnBoth' , [$method , $args]));
     }
@@ -167,11 +158,11 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         
         return 
         [
-            ['test1.txt' , ['contents' => 'test1'], false                  , true  ,['contents' => 'test1']],
-            ['test2.txt' , false                  , ['contents' => 'test2'], true  ,['contents' => 'test2']],
+            ['test1.txt' , ['path' => 'test1.txt' ,'contents' => 'test1'], false                  , true  ,['path' => 'test1.txt', 'contents' => 'test1']],
+            ['test2.txt' , false                  , ['path' => 'test2.txt' ,'contents' => 'test2'], true  ,['path' => 'test2.txt', 'contents' => 'test2']],
             ['test2.txt' , false                  , false                  , true  ,false],
-            ['test1.txt' , ['contents' => 'test1'], false                  , false ,['contents' => 'test1']],
-            ['test2.txt' , false                  , ['contents' => 'test2'], false ,['contents' => 'test2']],
+            ['test1.txt' , ['path' => 'test1.txt' ,'contents' => 'test1'], false                  , false ,['path' => 'test1.txt', 'contents' => 'test1']],
+            ['test2.txt' , false                  , ['path' => 'test2.txt' ,'contents' => 'test2'], false ,['path' => 'test2.txt', 'contents' => 'test2']],
             ['test2.txt' , false                  , false                  , false ,false],
         ];
         
@@ -186,9 +177,18 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
      * @param mixed $expected
      */
     public function testRead($path , $localResult , $remoteResult ,$autosave , $expected) {
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
+        $config        = $this->prophesize('League\Flysystem\Config')->reveal();
+        
+        $this->instance = $this->getMock(
+                'oat\flysystem\Adapter\DualStorageAdapter' , 
+                ['setConfigFromResult'],
+                [],
+                '',
+                false
+                );
+        
         
         $localProphet->read($path)->willReturn($localResult);
         
@@ -199,7 +199,12 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $expectedSave = [];
         
         if($remoteResult !== false && $autosave) {
+            $this->instance->expects($this->once())->method('setConfigFromResult')
+                ->with($remoteResult)->willReturn($config);
+            
             $localProphet->write($path , $remoteResult['contents'] , $config)->willReturn($remoteResult);
+            
+                    
         } elseif($remoteResult !== false) {
             $expectedSave[] =  $remoteResult;
         }
@@ -207,7 +212,10 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config , $autosave);
+        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
+        $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
+        $this->setInaccessibleProperty($this->instance, 'autosave', $autosave);
+        
         $this->assertSame($expected , $this->instance->read($path));
         $this->assertSame($expectedSave , $this->getInaccessibleProperty($this->instance, 'deferedSave'));
         $this->setInaccessibleProperty($this->instance, 'deferedSave' , []);
@@ -220,11 +228,11 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         
         return 
         [
-            ['test1.txt' , ['stream' => $tmp1], false              , true  , ['stream' => $tmp1]],
-            ['test2.txt' , false              , ['stream' => $tmp2], true  , ['stream' => $tmp2]],
+            ['test1.txt' , ['path' => 'test1.txt','stream' => $tmp1], false              , true  , ['path' => 'test1.txt',  'stream' => $tmp1]],
+            ['test2.txt' , false              , ['path' => 'test2.txt' , 'stream' => $tmp2], true  , ['path' => 'test2.txt', 'stream' => $tmp2]],
             ['test3.txt' , false              , false              , true  , false],
-            ['test1.txt' , ['stream' => $tmp1], false              , false , ['stream' => $tmp1]],
-            ['test2.txt' , false              , ['stream' => $tmp2], false , ['stream' => $tmp2]],
+            ['test1.txt' , ['path' => 'test1.txt','stream' => $tmp1], false              , false , ['path' => 'test1.txt', 'stream' => $tmp1]],
+            ['test2.txt' , false              , ['path' => 'test2.txt' , 'stream' => $tmp2], false , ['path' => 'test2.txt', 'stream' => $tmp2]],
             ['test3.txt' , false              , false              , false , false],
         ];
         
@@ -242,6 +250,14 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
         
+        $this->instance = $this->getMock(
+                'oat\flysystem\Adapter\DualStorageAdapter' , 
+                ['setConfigFromResult'],
+                [],
+                '',
+                false
+                );
+        
         $localProphet->readStream($path)->willReturn($localResult);
         
         $expectedSave = [];
@@ -251,6 +267,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         }
         
         if($remoteResult !== false && $autosave) {
+            $this->instance->expects($this->once())->method('setConfigFromResult')
+                ->with($remoteResult)->willReturn($config);
             $localProphet->writeStream($path , $remoteResult['stream'] , $config)->willReturn($remoteResult);
         } elseif($remoteResult !== false) {
             $expectedSave[] =  $remoteResult;
@@ -259,7 +277,10 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config , $autosave);
+        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
+        $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
+        $this->setInaccessibleProperty($this->instance, 'autosave', $autosave);
+        
         $this->assertSame($expected , $this->instance->readStream($path));
         $this->assertSame($expectedSave , $this->getInaccessibleProperty($this->instance, 'deferedSave'));
         $this->setInaccessibleProperty($this->instance, 'deferedSave' , []);
@@ -279,8 +300,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
                 
         $localProphet   = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $config         = $this->prophesize('League\Flysystem\Config')->reveal();
-                
+        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
+        
         $localMock      = $localProphet->reveal();
         $remoteProphet->listContents($fixtureDirectory , $fixtureRecursive)->willReturn($fixtureList);
         $remoteMock     = $remoteProphet->reveal();
@@ -293,9 +314,8 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         
         $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
         
         $fixtureStream = tmpfile();
         fputs($fixtureStream, 'test1' . "\n" . 'test2');
@@ -331,10 +351,42 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
         $this->assertSame($returnDist , $this->instance->writeStream($path , $file , $config));
     }
     
+    public function testSetConfigFromResult() {
+        
+        $fixtureResult = 
+                [
+                    'path'      => 'test.txt',
+                    'mimetype'  => 'text/plain',
+                ];
+        
+        $expected = 
+                [
+                    'mimetype'   => 'text/plain',
+                    'visibility' => 'public',
+                    'size'       => 180,
+                ];
+        
+        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        
+        
+        
+        $remoteProphet->getVisibility('test.txt')->willReturn(['visibility' => 'public']);
+        $remoteProphet->getSize('test.txt')->willReturn(['size'       => 180]);
+        
+        $localMock    = $localProphet->reveal();
+        $remoteMock   = $remoteProphet->reveal();
+        
+        $this->instance = new DualStorageAdapter($remoteMock , $localMock );
+        $config = $this->invokeProtectedMethod($this->instance, 'setConfigFromResult', [$fixtureResult]);
+        $this->assertInstanceOf('League\Flysystem\Config' , $config);
+        $this->assertEquals($expected , $this->getInaccessibleProperty($config, 'settings'));
+    }
+
     public function testDestructor() {
         
         $pathContent = 'file1.txt';
@@ -359,17 +411,32 @@ class DualStorageAdapterTest extends TaoPhpUnitTestRunner
         
         $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
-
+        
+        $this->instance = $this->getMock(
+                'oat\flysystem\Adapter\DualStorageAdapter' , 
+                ['setConfigFromResult'],
+                [],
+                '',
+                false
+                );
+        
         $localProphet->write($pathContent , $contents , $config)->willReturn(true);
         $localProphet->writeStream($pathStream , $stream , $config)->willReturn(true);
         
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new DualStorageAdapter($remoteMock , $localMock , $config);
+        $this->instance->expects($this->exactly(2))
+                ->method('setConfigFromResult')
+                ->withConsecutive([$fixtureDeferedSave[0]] , [$fixtureDeferedSave[1]])->willReturnOnConsecutiveCalls($config , $config);
+        
+        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
+        $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
         $this->setInaccessibleProperty($this->instance, 'deferedSave' , $fixtureDeferedSave);
-        unset($this->instance);
+        
+        $this->instance->__destruct();
     }
 
     public function tearDown()

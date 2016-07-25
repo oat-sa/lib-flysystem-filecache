@@ -41,12 +41,6 @@ class DualStorageAdapter extends AbstractAdapter
      * @var AbstractAdapter
      */
     protected $localStorage;
-    /**
-     * config use to store to local from remote
-     * on read operation
-     * @var Config
-     */
-    protected $localConfig;
     
     /**
      * true if local cache must to be write immediatly
@@ -59,6 +53,17 @@ class DualStorageAdapter extends AbstractAdapter
     protected $autosave;
     
     /**
+     * list of required local config entry
+     * @var array
+     */
+    protected $requiredConfig = [
+        'mimetype'   => 'getMimetype',
+        'size'       => 'getSize',
+        'visibility' => 'getVisibility',
+    ];
+
+
+    /**
      * array to store local file to write on destructor
      * @var array
      */
@@ -67,18 +72,15 @@ class DualStorageAdapter extends AbstractAdapter
      * DualStorageAdapter constructor.
      * @param AbstractAdapter $remoteStorage
      * @param AbstractAdapter $localStorage
-     * @param Config $localConfig
      * @param boolean $autosave true if local cache must to be write immediatly
      */
     public function __construct(
             AbstractAdapter $remoteStorage ,
             AbstractAdapter $localStorage, 
-            Config $localConfig,
             $autosave = true)
     {
         $this->remoteStorage = $remoteStorage;
         $this->localStorage  = $localStorage;
-        $this->localConfig   = $localConfig;
         $this->autosave      = boolval($autosave);
     }
     
@@ -96,14 +98,6 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function getLocalStorage() {
         return $this->localStorage;
-    }
-    
-    /**
-     * return local storage config
-     * @return Config
-     */
-    public function getLocalConfig() {
-        return $this->localConfig;
     }
     
     /**
@@ -150,7 +144,8 @@ class DualStorageAdapter extends AbstractAdapter
         $result = $this->remoteStorage->read($path);
         if($result !== false) {
             if($this->autosave) {
-                $this->localStorage->write($path , $result['contents'] , $this->localConfig);
+                $config = $this->setConfigFromResult($result);
+                $this->localStorage->write($path , $result['contents'] , $config);
             } elseif($result !== false) {
                 $this->deferedSave[] = $result;
             }
@@ -167,22 +162,22 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function readStream($path)
     {
-        
         if(($result = $this->localStorage->readStream($path)) !== false) {
             if(is_resource($result['stream'])) {
                 return $result;
             }
         }
-        
         $result = $this->remoteStorage->readStream($path);
-        if($result !== false && $this->autosave) { 
-            $resource = $result['stream'];
-            $result = $this->localStorage->writeStream($path , $resource , $this->localConfig);
-            $result['stream'] = $this->initStream($resource);
-        } elseif($result !== false) {
-            $this->deferedSave[] = $result;
+        if($result !== false ) { 
+            if($this->autosave) {
+                $resource = $result['stream'];
+                $config = $this->setConfigFromResult($result);
+                $result = $this->localStorage->writeStream($path , $resource , $config);
+                $result['stream'] = $this->initStream($resource);
+            } elseif($result !== false) {
+                $this->deferedSave[] = $result;
+            }
         }
-        
         return $result;
     }
 
@@ -422,13 +417,13 @@ class DualStorageAdapter extends AbstractAdapter
         return $resource;
     }
 
-        /**
+    /**
      * call method on both storage
      * return remote result
      * @param $method
      * @param array $args
      * @return mixed
-     */
+    */
     protected function callOnBoth($method, array $args = []) {
 
         call_user_func_array([$this->localStorage , $method] , $args);
@@ -436,14 +431,36 @@ class DualStorageAdapter extends AbstractAdapter
     }
     
     /**
-     * do defered write operations
-     */
+    * set local config from remote read Result or
+    * from file metadata has allback
+    * @param array $result
+    * @return Config
+    */
+    protected function setConfigFromResult(array $result) { 
+        
+        $config = new Config();
+        foreach ($this->requiredConfig as $param => $method) {
+            if(array_key_exists($param, $result)) {
+                $config->set($param, $result[$param]);
+            } else {
+                $params = $this->remoteStorage->$method($result['path']);
+                $config->set($param, $params[$param]);
+            }
+        }
+        return $config;
+        
+    }
+
+    /**
+    * do defered write operations
+    */
     public function __destruct() {
         foreach ($this->deferedSave as $index => $write) {
+            $config = $this->setConfigFromResult($write);
             if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
-                $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $this->localConfig);
+                $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
             } elseif(array_key_exists('contents', $write)) {
-                $this->localStorage->write($write['path'] , $write['contents'] , $this->localConfig);
+                $this->localStorage->write($write['path'] , $write['contents'] , $config);
             }
             unset($this->deferedSave[$index]);
         }
