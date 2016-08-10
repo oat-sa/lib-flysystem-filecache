@@ -112,7 +112,7 @@ class LocalCacheAdapter extends AbstractAdapter
      * change auto save value
      * @param boolean $synchronous
      */
-    public function setAutosave($synchronous) {
+    public function setSynchronous($synchronous) {
         $this->synchronous = boolval($synchronous);
         return $this;
     }
@@ -143,7 +143,7 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         $result = $this->remoteStorage->read($path);
         if($result !== false) {
-            if($this->autosave) {
+            if($this->synchronous) {
                 $config = $this->setConfigFromResult($result);
                 $this->localStorage->write($path , $result['contents'] , $config);
             } elseif($result !== false) {

@@ -24,13 +24,13 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
         
-        $autosave   = true;
+        $synchronous   = true;
         
-        $this->instance = new LocalCacheAdapter($remoteMock , $localMock , $autosave);
+        $this->instance = new LocalCacheAdapter($remoteMock , $localMock , $synchronous);
         
         $this->assertSame($remoteMock, $this->getInaccessibleProperty($this->instance, 'remoteStorage'));
         $this->assertSame($localMock, $this->getInaccessibleProperty($this->instance, 'localStorage'));
-        $this->assertSame($autosave, $this->getInaccessibleProperty($this->instance, 'autosave'));
+        $this->assertSame($synchronous, $this->getInaccessibleProperty($this->instance, 'synchronous'));
 
     }
 
@@ -100,7 +100,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             ];
     }
     /**
-     * @dataProvider autosaveProvider
+     * @dataProvider synchronousProvider
      * @param type $value
      * @param type $expected
      */
@@ -173,10 +173,10 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      * @param string $path
      * @param array|boolean $localResult
      * @param array|boolean $remoteResult
-     * @param boolean $autosave
+     * @param boolean $synchronous
      * @param mixed $expected
      */
-    public function testRead($path , $localResult , $remoteResult ,$autosave , $expected) {
+    public function testRead($path , $localResult , $remoteResult ,$synchronous , $expected) {
         $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $config        = $this->prophesize('League\Flysystem\Config')->reveal();
@@ -200,7 +200,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         
         $expectedSave = [];
         
-        if($remoteResult !== false && $autosave) {
+        if($remoteResult !== false && $synchronous) {
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
             
@@ -216,7 +216,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         
         $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
         $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
-        $this->setInaccessibleProperty($this->instance, 'autosave', $autosave);
+        $this->setInaccessibleProperty($this->instance, 'synchronous', $synchronous);
         
         $this->assertSame($expected , $this->instance->read($path));
         $this->assertSame($expectedSave , $this->getInaccessibleProperty($this->instance, 'deferedSave'));
@@ -247,7 +247,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      * @param array|boolean $remoteResult
      * @param mixed $expected
      */
-    public function testReadStream($path , $localResult , $remoteResult, $autosave , $expected) {
+    public function testReadStream($path , $localResult , $remoteResult, $synchronous , $expected) {
         $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
@@ -270,7 +270,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             $localProphet->readStream($path)->willReturn($localResult);
         }
         
-        if($remoteResult !== false && $autosave) {
+        if($remoteResult !== false && $synchronous) {
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
             $localProphet->writeStream($path , $remoteResult['stream'] , $config)->willReturn($remoteResult);
@@ -284,7 +284,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         
         $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
         $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
-        $this->setInaccessibleProperty($this->instance, 'autosave', $autosave);
+        $this->setInaccessibleProperty($this->instance, 'synchronous', $synchronous);
         
         $this->assertEquals($expected , $this->instance->readStream($path));
         $this->assertSame($expectedSave , $this->getInaccessibleProperty($this->instance, 'deferedSave'));
