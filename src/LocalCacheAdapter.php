@@ -22,13 +22,13 @@ use League\Flysystem\Adapter\AbstractAdapter;
 use League\Flysystem\Config;
 
 /**
- * Class DualStorageAdapter
+ * Class LocalCacheAdapter
  * use two storage, a remote and a local
  * local has priority on read operation
  *
- * @package oat\libFlysystemFilecache\model\flysystem
+ * @package oat\flysystem\Adapter
  */
-class DualStorageAdapter extends AbstractAdapter
+class LocalCacheAdapter extends AbstractAdapter
 {
     /**
      * remote flysystem adapter
@@ -50,7 +50,7 @@ class DualStorageAdapter extends AbstractAdapter
      * 
      * @var boolean 
      */
-    protected $autosave;
+    protected $synchronous;
     
     /**
      * list of required local config entry
@@ -72,16 +72,16 @@ class DualStorageAdapter extends AbstractAdapter
      * DualStorageAdapter constructor.
      * @param AbstractAdapter $remoteStorage
      * @param AbstractAdapter $localStorage
-     * @param boolean $autosave true if local cache must to be write immediatly
+     * @param boolean $synchronous true if local cache must to be write immediatly
      */
     public function __construct(
             AbstractAdapter $remoteStorage ,
             AbstractAdapter $localStorage, 
-            $autosave = true)
+            $synchronous = true)
     {
         $this->remoteStorage = $remoteStorage;
         $this->localStorage  = $localStorage;
-        $this->autosave      = boolval($autosave);
+        $this->synchronous      = boolval($synchronous);
     }
     
     /**
@@ -104,16 +104,16 @@ class DualStorageAdapter extends AbstractAdapter
      * return autosave value
      * @return boolean
      */
-    public function getAutosave() {
-        return $this->autosave;
+    public function getSynchronous() {
+        return $this->synchronous;
     }
     
     /**
      * change auto save value
-     * @param boolean $autosave
+     * @param boolean $synchronous
      */
-    public function setAutosave($autosave) {
-        $this->autosave = boolval($autosave);
+    public function setAutosave($synchronous) {
+        $this->synchronous = boolval($synchronous);
         return $this;
     }
 
@@ -138,8 +138,8 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function read($path)
     {
-        if(($result = $this->localStorage->read($path)) !== false) {
-            return $result;
+        if(($result = $this->localStorage->has($path)) !== false) {
+            return $this->localStorage->read($path);
         }
         $result = $this->remoteStorage->read($path);
         if($result !== false) {
@@ -162,18 +162,20 @@ class DualStorageAdapter extends AbstractAdapter
      */
     public function readStream($path)
     {
-        if(($result = $this->localStorage->readStream($path)) !== false) {
+        if(($result = $this->localStorage->has($path)) !== false) {
+            $result = $this->localStorage->readStream($path);
             if(is_resource($result['stream'])) {
                 return $result;
             }
         }
         $result = $this->remoteStorage->readStream($path);
         if($result !== false ) { 
-            if($this->autosave) {
+            if($this->synchronous) {
                 $resource = $result['stream'];
                 $config = $this->setConfigFromResult($result);
                 $result = $this->localStorage->writeStream($path , $resource , $config);
-                $result['stream'] = $this->initStream($resource);
+                fclose($resource);
+                $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
                 $this->deferedSave[] = $result;
             }
