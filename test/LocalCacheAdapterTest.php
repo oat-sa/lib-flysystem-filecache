@@ -274,7 +274,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
             $localProphet->writeStream($path , $remoteResult['stream'] , $config)->willReturn($remoteResult);
-            $localProphet->readStream($path)->willReturn($localResult);
+            $localProphet->readStream($path)->willReturn($remoteResult);
         } elseif($remoteResult !== false) {
             $expectedSave[] =  $remoteResult;
         }
