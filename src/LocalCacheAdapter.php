@@ -267,7 +267,12 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        return $this->callOnBoth('write' , [$path, $contents, $config]);
+        $result = $this->remoteStorage->write($path, $contents, $config);
+         if($this->synchronous) {
+            $this->localStorage->writeStream($path, $contents, $this->setConfigFromResult($result));
+         } else {
+             $this->deferedSave[] = $result;
+         }
     }
 
     /**
@@ -282,7 +287,11 @@ class LocalCacheAdapter extends AbstractAdapter
     public function writeStream($path, $resource, Config $config)
     {   
         $result = $this->remoteStorage->writeStream($path, $resource, $config);
-        $this->localStorage->writeStream($path, $this->initStream($resource), $config);
+         if($this->synchronous) {
+            $this->localStorage->writeStream($path, $this->initStream($resource), $this->setConfigFromResult($result));
+         } else {
+             $this->deferedSave[] = $result;
+         }
         return $result;
     }
 

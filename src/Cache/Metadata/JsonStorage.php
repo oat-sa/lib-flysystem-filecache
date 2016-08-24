@@ -69,8 +69,9 @@ class JsonStorage extends AbstractFileStorage
      * {@inheritdoc}
      */
     public function set($path, $key, $value) {
-        $this->setToMemory($path, $key, $value);
-        $this->save($path, $this->getFromMemory($path));
+        $this->setToMemory($path , $value , $key );
+        $cacheFile = $this->getCachePath($path);
+        file_put_contents($cacheFile , json_encode($this->getFromMemory($path)));
         return $this;
     }
 
