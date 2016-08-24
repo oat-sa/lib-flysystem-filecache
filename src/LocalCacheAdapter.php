@@ -271,6 +271,7 @@ class LocalCacheAdapter extends AbstractAdapter
          if($this->synchronous) {
             $this->localStorage->writeStream($path, $contents, $this->setConfigFromResult($result));
          } else {
+             $result['contents'] = $contents;
              $this->deferedSave[] = $result;
          }
     }
@@ -290,6 +291,7 @@ class LocalCacheAdapter extends AbstractAdapter
          if($this->synchronous) {
             $this->localStorage->writeStream($path, $this->initStream($resource), $this->setConfigFromResult($result));
          } else {
+             $result['stream'] = $resource;
              $this->deferedSave[] = $result;
          }
         return $result;
