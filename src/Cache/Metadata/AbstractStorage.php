@@ -22,7 +22,6 @@ abstract class AbstractStorage implements StorageInterface
     protected $properties = [
         'mimetype',
         'size',
-        'visibility',
         'timestamp',
     ];
     /**

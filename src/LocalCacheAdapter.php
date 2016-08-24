@@ -60,6 +60,7 @@ class LocalCacheAdapter extends AbstractAdapter
         'mimetype'   => 'getMimetype',
         'size'       => 'getSize',
         'visibility' => 'getVisibility',
+        'timestamp'  => 'getTimestamp'
     ];
 
 
