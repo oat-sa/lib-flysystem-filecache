@@ -18,13 +18,16 @@
  *
  */
 namespace oat\flysystem\Adapter\Cache;
-use League\Flysystem\Adapter\AbstractAdapter;
+
+use League\Flysystem\Adapter\Local;
+use League\Flysystem\Config;
+use oat\flysystem\Adapter\Cache\Metadata\StorageInterface;
 /**
  * Description of LocalCopy
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
-class LocalCopy extends \League\Flysystem\Adapter\Local 
+class LocalCopy extends Local 
 {
     
     protected $metadata;
@@ -94,17 +97,17 @@ class LocalCopy extends \League\Flysystem\Adapter\Local
         return parent::setVisibility($path, $visibility);
     }
 
-    public function update($path, $contents, \League\Flysystem\Config $config) {
+    public function update($path, $contents, Config $config) {
         $this->metadata->save($path, $config);
         return parent::update($path, $contents, $config);
     }
 
-    public function updateStream($path, $resource, \League\Flysystem\Config $config) {
+    public function updateStream($path, $resource, Config $config) {
         $this->metadata->save($path, $config);
         return parent::updateStream($path, $resource, $config);
     }
 
-    public function write($path, $contents, \League\Flysystem\Config $config) {
+    public function write($path, $contents, Config $config) {
         $file = parent::write($path, $contents, $config);
         if($file !== false) {
             $this->metadata->save($path, $config);
@@ -112,7 +115,7 @@ class LocalCopy extends \League\Flysystem\Adapter\Local
         return $file;
     }
 
-    public function writeStream($path, $resource, \League\Flysystem\Config $config) {
+    public function writeStream($path, $resource, Config $config) {
         $file = parent::writeStream($path, $resource, $config);
         if($file !== false) {
             $this->metadata->save($path, $config);
