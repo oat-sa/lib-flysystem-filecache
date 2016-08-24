@@ -48,69 +48,75 @@ class LocalCopy extends Local
     }
     
     public function copy($path, $newpath) {
-        $this->metadata->copy($path, $newpath);
-        return parent::copy($path, $newpath);
+        $this->metadata->copy($this->applyPathPrefix($path), $this->applyPathPrefix($newpath));
+        return parent::copy($path, $newpath );
+    }
+    
+    public function delete($path) {
+         $this->metadata->delete($this->applyPathPrefix($path));
+        return parent::delete($path);
     }
 
+    
     public function getMetadata($path) {
-        if(($result = $this->metadata->load($path)) !== false) {
+        if(($result = $this->metadata->load($this->applyPathPrefix($path))) !== false) {
             return $result;
         }
         return parent::getMetadata($path);
     }
 
     public function getMimetype($path) {
-        if(($result = $this->metadata->get($path, 'mimetype')) !== false) {
+        if(($result = $this->metadata->get($this->applyPathPrefix($path), 'mimetype')) !== false) {
             return $result;
         }
         parent::getMimetype($path);
     }
 
     public function getSize($path) {
-        if(($result = $this->metadata->get($path, 'size')) !== false) {
+        if(($result = $this->metadata->get($this->applyPathPrefix($path), 'size')) !== false) {
             return $result;
         }
         return parent::getSize($path);
     }
 
     public function getTimestamp($path) {
-        if(($result = $this->metadata->get($path, 'timestamp')) !== false) {
+        if(($result = $this->metadata->get($this->applyPathPrefix($path), 'timestamp')) !== false) {
             return $result;
         }
         return parent::getTimestamp($path);
     }
 
     public function getVisibility($path) {
-        if(($result = $this->metadata->get($path, 'visibility')) !== false) {
+        if(($result = $this->metadata->get($this->applyPathPrefix($path), 'visibility')) !== false) {
             return $result;
         }
         return parent::getVisibility($path);
     }
 
     public function rename($path, $newpath) {
-        $this->metadata->rename($path, $newpath);
+        $this->metadata->rename($this->applyPathPrefix($path), $this->applyPathPrefix($newpath));
         return parent::rename($path, $newpath);
     }
 
     public function setVisibility($path, $visibility) {
-        $this->metadata->set($path, 'visibility' , $visibility);
+        $this->metadata->set($this->applyPathPrefix($path), 'visibility' , $visibility);
         return parent::setVisibility($path, $visibility);
     }
 
     public function update($path, $contents, Config $config) {
-        $this->metadata->save($path, $config);
+        $this->metadata->save($this->applyPathPrefix($path), $config);
         return parent::update($path, $contents, $config);
     }
 
     public function updateStream($path, $resource, Config $config) {
-        $this->metadata->save($path, $config);
+        $this->metadata->save($this->applyPathPrefix($path), $config);
         return parent::updateStream($path, $resource, $config);
     }
 
     public function write($path, $contents, Config $config) {
         $file = parent::write($path, $contents, $config);
         if($file !== false) {
-            $this->metadata->save($path, $config);
+            $this->metadata->save($this->applyPathPrefix($path), $config);
         }
         return $file;
     }
@@ -118,7 +124,7 @@ class LocalCopy extends Local
     public function writeStream($path, $resource, Config $config) {
         $file = parent::writeStream($path, $resource, $config);
         if($file !== false) {
-            $this->metadata->save($path, $config);
+            $this->metadata->save($this->applyPathPrefix($path), $config);
         }
         return $file;
     }
