@@ -20,7 +20,9 @@ abstract class AbstractFileStorage extends AbstractStorage
      * @var array
      */
     protected $memoryCache = [];
-
+    
+    protected $cacheExtension = '';
+    
     /**
      * get data from memory cache
      * @param string $path
@@ -58,7 +60,7 @@ abstract class AbstractFileStorage extends AbstractStorage
     protected function getCachePath($path) {
         
         $infos = pathinfo($path);
-        return $infos['dirname'] . DIRECTORY_SEPARATOR . '.' . $infos['basename'] . '.json'; 
+        return $infos['dirname'] . DIRECTORY_SEPARATOR . '.' . $infos['basename'] . '.' . $this->cacheExtension; 
         
     }
     

@@ -59,7 +59,6 @@ class LocalCacheAdapter extends AbstractAdapter
     protected $requiredConfig = [
         'mimetype'   => 'getMimetype',
         'size'       => 'getSize',
-        'visibility' => 'getVisibility',
         'timestamp'  => 'getTimestamp'
     ];
 

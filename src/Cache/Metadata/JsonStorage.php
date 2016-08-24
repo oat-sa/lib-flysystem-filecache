@@ -28,6 +28,8 @@ use League\Flysystem\Config;
 class JsonStorage extends AbstractFileStorage
 {
    
+    protected $cacheExtension = 'meta.json';
+
     /**
      * {@inheritdoc}
      */
