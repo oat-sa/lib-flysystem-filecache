@@ -36,7 +36,7 @@ class PhpStorage extends AbstractFileStorage
      * @return string
      */
     protected function toPhpCode(array $data) {
-        return '<?php return ' . var_export($data, true);
+        return '<?php return ' . var_export($data, true) . ';';
     }
     
     protected function refesh($file) {

@@ -56,7 +56,7 @@
 	"autoload" : {
 		"psr-4" : {
 			"oat\\flysystem\\Adapter\\" : "src",
-			"oat\\libFlysystemFilecache\\test\\" : "test"
+			"oat\\libFlysystemFilecache\\test\\" : "test/filecache"
 		}
 	}
 }

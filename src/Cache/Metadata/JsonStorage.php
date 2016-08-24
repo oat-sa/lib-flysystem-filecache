@@ -37,8 +37,9 @@ class JsonStorage extends AbstractFileStorage
         if(($result = $this->getFromMemory($path)) === false) {
             $cacheFile = $this->getCachePath($path);
             $result = json_decode(file_get_contents($cacheFile) , true);
+            return (array_key_exists($key, $result))?$result[$key] : false;
         }
-        return (array_key_exists($key, $result))?$result[$key] : false;
+        return false;
     }
     
     /**
