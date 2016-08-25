@@ -69,7 +69,9 @@ class LocalCopy extends Local
         if(($result = $this->metadata->get($this->applyPathPrefix($path), 'mimetype')) !== false) {
             return $result;
         }
-        parent::getMimetype($path);
+        $mimeType = parent::getMimetype($path);
+        $this->metadata->set($path, 'mimetype', $mimeType);
+        return $mimeType;
     }
 
     public function getSize($path) {
@@ -129,5 +131,4 @@ class LocalCopy extends Local
         return $file;
     }
 
-    
 }
