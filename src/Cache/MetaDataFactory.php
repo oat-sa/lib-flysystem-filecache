@@ -26,7 +26,7 @@ class MetaDataFactory {
 
 
     static function build() {
-        foreach (self::classes as $adapter) {
+        foreach (self::$classes as $adapter) {
             $className = $this->ns . '\\' . $adapter . 'Storage';
             if($className::enable()) {
                 return new $className;
