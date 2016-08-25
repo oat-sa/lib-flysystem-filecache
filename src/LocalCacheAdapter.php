@@ -443,7 +443,7 @@ class LocalCacheAdapter extends AbstractAdapter
     }
     
     protected function initStream($resource) {
-        @rewind($resource);
+        @\rewind($resource);
         return $resource;
     }
 
@@ -491,7 +491,7 @@ class LocalCacheAdapter extends AbstractAdapter
         if(!empty($method)) {
             $params = $this->remoteStorage->$method($path);
             if(!empty($params)) {
-                $config->set($param, $params[$param]);
+                $config->set($property, $params[$property]);
                 return true;
             }
         }
@@ -505,7 +505,7 @@ class LocalCacheAdapter extends AbstractAdapter
         foreach ($this->deferedSave as $index => $write) {
             $config = $this->setConfigFromResult($write);
             if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
-                $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
+                $this->localStorage->writeStream($write['path'] , $write['stream'] , $config);
             } elseif(array_key_exists('contents', $write)) {
                 $this->localStorage->write($write['path'] , $write['contents'] , $config);
             }
