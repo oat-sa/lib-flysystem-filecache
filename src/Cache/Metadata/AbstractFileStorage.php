@@ -133,7 +133,7 @@ abstract class AbstractFileStorage extends AbstractStorage
             $cacheFile = $this->getCachePath($path);
              if(file_exists($cacheFile)) {
                 $result = $this->readFile($cacheFile);
-                return (array_key_exists($key, $result))?$result[$key] : false;
+                return (array_key_exists($key, $result))?[$key => $result[$key]] : false;
             }
         }
         return false;

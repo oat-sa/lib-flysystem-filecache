@@ -70,7 +70,7 @@ class LocalCopy extends Local
             return $result;
         }
         $mimeType = parent::getMimetype($path);
-        $this->metadata->set($path, 'mimetype', $mimeType);
+        $this->metadata->set($this->applyPathPrefix($path), 'mimetype', $mimeType);
         return $mimeType;
     }
 
