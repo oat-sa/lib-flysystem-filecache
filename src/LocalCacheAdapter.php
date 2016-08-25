@@ -272,8 +272,12 @@ class LocalCacheAdapter extends AbstractAdapter
     public function write($path, $contents, Config $config)
     {
         $result = $this->remoteStorage->write($path, $contents, $config);
-        $this->localStorage->writeStream($path, $contents, $this->setConfigFromResult($result));
-
+        if($this->synchronous) {
+            $this->localStorage->write($path, $contents, $this->setConfigFromResult($result));
+        } else {
+            $result['content'] = $contents;
+            $this->deferedSave[] = $result;
+        }
     }
 
     /**
@@ -288,7 +292,13 @@ class LocalCacheAdapter extends AbstractAdapter
     public function writeStream($path, $resource, Config $config)
     {   
         $result = $this->remoteStorage->writeStream($path, $resource, $config);
-        $this->localStorage->writeStream($path, $this->initStream($resource), $this->setConfigFromResult($result));
+        $localResource = $this->copyStream($resource);
+        if($this->synchronous) {
+            $this->localStorage->writeStream($path, $localResource, $this->setConfigFromResult($result));
+        } else {
+            $result['stream'] = $localResource;
+            $this->deferedSave[] = $result;
+        }
         return $result;
     }
 
@@ -419,6 +429,18 @@ class LocalCacheAdapter extends AbstractAdapter
         return call_user_func_array([$this->remoteStorage , $method] , $args);
 
     }
+    /**
+     * return a new stream from $resource
+     * @param resource $resource
+     * @return resource
+     */
+    protected function copyStream($resource) {
+        $this->initStream($resource);
+        $newResource = tmpfile();
+        stream_copy_to_stream($resource , $newResource);
+        $this->initStream($resource);
+        return $resource;
+    }
     
     protected function initStream($resource) {
         rewind($resource);
@@ -484,6 +506,7 @@ class LocalCacheAdapter extends AbstractAdapter
             $config = $this->setConfigFromResult($write);
             if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
                 $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
+                fclose($write['stream']);
             } elseif(array_key_exists('contents', $write)) {
                 $this->localStorage->write($write['path'] , $write['contents'] , $config);
             }
