@@ -181,7 +181,8 @@ class LocalCacheAdapter extends AbstractAdapter
                 fclose($resource);
                 $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
-                $this->deferedSave[] = $result;
+                $localResource = $this->copyStream($resource);
+                $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
             }
         }
         return $result;
