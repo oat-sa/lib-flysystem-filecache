@@ -15,7 +15,7 @@ namespace oat\flysystem\Adapter\Cache;
  */
 class MetaDataFactory {
     
-    protected $classes = [
+    protected static $classes = [
         'Apcu',
         'Php',
         'Json',
@@ -26,7 +26,7 @@ class MetaDataFactory {
 
 
     static function build() {
-        foreach ($this->classes as $adapter) {
+        foreach (self::classes as $adapter) {
             $className = $this->ns . '\\' . $adapter . 'Storage';
             if($className::enable()) {
                 return new $className;
