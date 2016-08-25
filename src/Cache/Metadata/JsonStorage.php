@@ -44,7 +44,7 @@ class JsonStorage extends AbstractFileStorage
      * {@inheritdoc}
      */
     protected function writeFile($path, array $data) {
-        return file_put_contents($cacheFile , json_encode($this->getFromMemory($path)));
+        return file_put_contents($path , json_encode($data));
     }
     
     /**
