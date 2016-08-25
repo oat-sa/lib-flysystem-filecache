@@ -22,7 +22,7 @@ class MetaDataFactory {
         'Txt',
     ];
     
-    protected $ns = '\\oat\\flysystem\\Adapter\\Cache\\Metadata';
+    protected static $ns = '\\oat\\flysystem\\Adapter\\Cache\\Metadata';
 
     static function build() {
         foreach (self::$classes as $adapter) {
