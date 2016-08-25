@@ -20,6 +20,8 @@
 
 namespace oat\flysystem\Adapter\Cache\Metadata;
 
+use League\Flysystem\Config;
+
 /**
  * Description of AbstractFileStorage
  *
