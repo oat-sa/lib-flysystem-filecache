@@ -24,10 +24,9 @@ class MetaDataFactory {
     
     protected $ns = '\\oat\\flysystem\\Adapter\\Cache\\Metadata';
 
-
     static function build() {
         foreach (self::$classes as $adapter) {
-            $className = $this->ns . '\\' . $adapter . 'Storage';
+            $className = self::$ns . '\\' . $adapter . 'Storage';
             if($className::enable()) {
                 return new $className;
             }
