@@ -33,11 +33,9 @@ class JsonStorage extends AbstractFileStorage
     /**
      * {@inheritdoc}
      */
-    public function get($path, $key) {
-        if(($result = $this->getFromMemory($path)) === false) {
-            $cacheFile = $this->getCachePath($path);
-            $result = json_decode(file_get_contents($cacheFile) , true);
-            return (array_key_exists($key, $result))?$result[$key] : false;
+    protected function readFile($path) {
+        if(file_exists($path)) {
+            return  $data = json_decode(file_get_contents($path) , true);
         }
         return false;
     }
@@ -45,39 +43,15 @@ class JsonStorage extends AbstractFileStorage
     /**
      * {@inheritdoc}
      */
-    public function load($path) {
-        if(($result = $this->getFromMemory($path)) !== false) {
-            return $result;
-        }
-        $cacheFile = $this->getCachePath($path);
-        if(file_exists($cacheFile)) {
-            $data = json_decode(file_get_contents($cacheFile) , true);
-            $this->setToMemory($path, $data);
-            return $data;
-        }
-        return false;
+    protected function writeFile($path, array $data) {
+        return file_put_contents($cacheFile , json_encode($this->getFromMemory($path)));
     }
     
     /**
      * {@inheritdoc}
      */
-    public function save($path, Config $data) {
-        $cache = $this->parseData($data);
-        $this->setToMemory($path, $cache);
-        
-        $cacheFile = $this->getCachePath($path);
-        file_put_contents($cacheFile , json_encode($cache));
-        return $this;
-    }
-    
-    /**
-     * {@inheritdoc}
-     */
-    public function set($path, $key, $value) {
-        $this->setToMemory($path , $value , $key );
-        $cacheFile = $this->getCachePath($path);
-        file_put_contents($cacheFile , json_encode($this->getFromMemory($path)));
-        return $this;
+    public static function enable() {
+        return (extension_loaded('json'));
     }
 
 }

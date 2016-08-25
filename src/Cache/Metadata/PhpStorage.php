@@ -31,6 +31,13 @@ class PhpStorage extends AbstractFileStorage
     protected $cacheExtension = 'meta.php'; 
     
     /**
+     * {@inheritdoc}
+     */
+    public static function enable() {
+        return (extension_loaded('Zend OPcache') && opcache_get_status());
+    }
+    
+    /**
      * 
      * @param array $data
      * @return string
@@ -40,48 +47,23 @@ class PhpStorage extends AbstractFileStorage
     }
     
     protected function refesh($file) {
-        if(extension_loaded('Zend OPcache') && opcache_get_status()) {
+        if(self::enable()) {
             opcache_compile_file($file);
         }
         return $this;
     }
 
-
-    public function get($path, $key) {
-        if(($result = $this->getFromMemory($path)) !== false) {
-            return $result;
-        }
-        if(($result = $this->load($path)) !== false) {
-            $this->setToMemory($path, $result);
-            return (array_key_exists($key, $result))?$result[$key] : false;
+    protected function readFile($path) {
+        if(file_exists($path)) {
+            include $path;
         }
         return false;
     }
 
-    public function load($path) {
-        if(($result = $this->getFromMemory($path)) !== false) {
-            return $result;
-        }
-        $cacheFile =  $this->getCachePath($path);
-        if(file_exists($cacheFile)) {
-            include $cacheFile;
-        }
-        return false;
-    }
-
-    public function save($path, Config $data) {
-        $cache = $this->parseData($data);
-        $this->setToMemory($path, $cache);
-        $cacheFile = $this->getCachePath($path);
-        file_put_contents($cacheFile , $this->toPhpCode($cache));
-        return $this;
-    }
-
-    public function set($path, $key, $value) {
-        $this->setToMemory($path , $value , $key );
-        $cacheFile = $this->getCachePath($path);
-        file_put_contents($cacheFile , $this->toPhpCode($this->getFromMemory($path)));
-        return $this;
+    protected function writeFile($path, array $data) {
+        $result = file_put_contents($path , $this->toPhpCode($data));
+        $this->refesh($path);
+        return $result;
     }
 
 }

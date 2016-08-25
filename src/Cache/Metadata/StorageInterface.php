@@ -26,6 +26,12 @@ namespace oat\flysystem\Adapter\Cache\Metadata;
 interface StorageInterface {
     
     /**
+     * check adapter requirements
+     * @return boolean
+     */
+    public static function enable();
+
+    /**
      * 
      * @param string $path
      * @param string $key
