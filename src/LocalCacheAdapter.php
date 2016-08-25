@@ -174,8 +174,8 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         $result = $this->remoteStorage->readStream($path);
         if($result !== false ) { 
+            $resource = $result['stream'];
             if($this->synchronous) {
-                $resource = $result['stream'];
                 $config = $this->setConfigFromResult($result);
                 $result = $this->localStorage->writeStream($path , $resource , $config);
                 fclose($resource);
