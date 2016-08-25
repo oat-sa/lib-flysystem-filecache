@@ -275,9 +275,9 @@ class LocalCacheAdapter extends AbstractAdapter
         if($this->synchronous) {
             $this->localStorage->write($path, $contents, $this->setConfigFromResult($result));
         } else {
-            $result['content'] = $contents;
-            $this->deferedSave[] = $result;
+            $this->deferedSave = array_merge($result , ['path' => $path]);
         }
+        return $result;
     }
 
     /**
@@ -296,9 +296,9 @@ class LocalCacheAdapter extends AbstractAdapter
         if($this->synchronous) {
             $this->localStorage->writeStream($path, $localResource, $this->setConfigFromResult($result));
         } else {
-            $result['stream'] = $localResource;
-            $this->deferedSave[] = $result;
+            $this->deferedSave = array_merge($result , ['path' => $path , 'stream' => $localResource]);
         }
+        $result['stream'] = $resource;
         return $result;
     }
 
@@ -443,7 +443,7 @@ class LocalCacheAdapter extends AbstractAdapter
     }
     
     protected function initStream($resource) {
-        rewind($resource);
+        @rewind($resource);
         return $resource;
     }
 
@@ -506,7 +506,6 @@ class LocalCacheAdapter extends AbstractAdapter
             $config = $this->setConfigFromResult($write);
             if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
                 $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
-                fclose($write['stream']);
             } elseif(array_key_exists('contents', $write)) {
                 $this->localStorage->write($write['path'] , $write['contents'] , $config);
             }
