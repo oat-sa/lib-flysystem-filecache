@@ -170,7 +170,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      * {@inheritdoc}
      */
     public function set($path, $key, $value) {
-        $this->setToMemory($path , $value , $key );
+        $this->load($path);
         $cacheFile = $this->getCachePath($path);
         $this->writeFile($cacheFile , $this->getFromMemory($path));
         return $this;

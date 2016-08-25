@@ -174,14 +174,13 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         $result = $this->remoteStorage->readStream($path);
         if($result !== false ) { 
-            $resource = $result['stream'];
             if($this->synchronous) {
                 $config = $this->setConfigFromResult($result);
-                $result = $this->localStorage->writeStream($path , $resource , $config);
-                fclose($resource);
+                $this->localStorage->writeStream($path , $result['stream'] , $config);
+                fclose($result['stream']);
                 $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
-                $localResource = $this->copyStream($resource);
+                $localResource = $this->copyStream($result['stream']);
                 $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
             }
         }
@@ -499,7 +498,7 @@ class LocalCacheAdapter extends AbstractAdapter
         return false;
     }
 
-        /**
+    /**
     * do defered write operations
     */
     public function __destruct() {
