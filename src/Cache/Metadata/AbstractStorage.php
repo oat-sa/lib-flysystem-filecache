@@ -8,6 +8,8 @@
 
 namespace oat\flysystem\Adapter\Cache\Metadata;
 
+use League\Flysystem\Config;
+
 /**
  * Description of AbstractStorage
  *
@@ -23,18 +25,31 @@ abstract class AbstractStorage implements StorageInterface
         'mimetype',
         'size',
         'timestamp',
+        'basename',
+        'extension',
+        'filename',
+        'type',
     ];
-    /**
+    
+     /**
      * return filtered metadata
      * @param array $data
      * @return array
      */
-    protected function parseData(\League\Flysystem\Config $data) {
+    protected function parseData(Config $data) {
         $result = [];
         foreach ($this->properties as $property) {
             if($data->has($property)) {
-                $result[$property] = $data->get($property);
+                $value = $data->get($property);
+                $this->setParam($result, $property, $value);
             }
+        }
+        return $result;
+    }
+    
+    protected function setParam(&$result , $property , $value) {
+        if(!empty($value)) {
+            $result[$property] = $value;
         }
         return $result;
     }

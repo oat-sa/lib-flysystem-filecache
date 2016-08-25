@@ -59,7 +59,11 @@ class LocalCacheAdapter extends AbstractAdapter
     protected $requiredConfig = [
         'mimetype'   => 'getMimetype',
         'size'       => 'getSize',
-        'timestamp'  => 'getTimestamp'
+        'timestamp'  => 'getTimestamp',
+        'basename'   => null,
+        'extension'  => null,
+        'filename'   => null,
+        'type'       => null,
     ];
 
 
@@ -447,15 +451,32 @@ class LocalCacheAdapter extends AbstractAdapter
             if(array_key_exists($param, $result)) {
                 $config->set($param, $result[$param]);
             } else {
-                $params = $this->remoteStorage->$method($result['path']);
-                $config->set($param, $params[$param]);
+                $this->getPropertyFromRemote($result['path'], $param, $method, $config);
             }
         }
         return $config;
         
     }
-
     /**
+     * return set property to config from remote file
+     * @param type $path
+     * @param type $property
+     * @param type $method
+     * @param Config $config
+     * @return boolean
+     */
+    protected function getPropertyFromRemote($path , $property , $method , Config $config) {
+        if(!empty($method)) {
+            $params = $this->remoteStorage->$method($path);
+            if(!empty($params)) {
+                $config->set($param, $params[$param]);
+                return true;
+            }
+        }
+        return false;
+    }
+
+        /**
     * do defered write operations
     */
     public function __destruct() {
