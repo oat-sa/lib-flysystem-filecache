@@ -71,9 +71,9 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     protected function setToMemory($path , $value , $key = null) {
         if(is_null($key)) {
-            $this->memoryCache[$path][$key] = $value;
-        } else {
             $this->memoryCache[$path] = $value;
+        } else {
+            $this->memoryCache[$path][$key] = $value;
         }
         return $this;
     }
@@ -172,7 +172,10 @@ abstract class AbstractFileStorage extends AbstractStorage
     public function set($path, $key, $value) {
         $this->load($path);
         $cacheFile = $this->getCachePath($path);
-        $this->writeFile($cacheFile , $this->getFromMemory($path));
+        $data = $this->getFromMemory($path);
+        $data[$key] = $value;
+        $this->writeFile($cacheFile , $data);
+        $this->setToMemory($path, $data);
         return $this;
     }
 }
