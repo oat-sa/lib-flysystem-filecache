@@ -54,9 +54,11 @@ class PhpStorage extends AbstractFileStorage
     }
 
     protected function readFile($path) {
+        
         if(file_exists($path)) {
-            include $path;
+            return include $path;
         }
+
         return false;
     }
 

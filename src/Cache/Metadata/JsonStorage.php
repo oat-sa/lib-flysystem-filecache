@@ -35,7 +35,7 @@ class JsonStorage extends AbstractFileStorage
      */
     protected function readFile($path) {
         if(file_exists($path)) {
-            return  $data = json_decode(file_get_contents($path) , true);
+            return json_decode(file_get_contents($path) , true);
         }
         return false;
     }

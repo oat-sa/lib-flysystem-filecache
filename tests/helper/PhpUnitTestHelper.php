@@ -1,25 +1,11 @@
 <?php
 
-abstract class PhpUnitTestHelper extends GenerisPhpUnitTestRunner{
-	
-	const SESSION_KEY = 'TAO_TEST_SESSION';
-    /**
-     *
-     * @var boolean
-     */
-    private static $connected = false;
+namespace oat\flysystem\test\helper;
 
+abstract class PhpUnitTestHelper extends \PHPUnit_Framework_TestCase {
+    
+    protected $instance;
 
-    /**
-     * shared methods for test initialization
-     */
-    public static function initTest(){
-        //connect the API
-        if(!self::$connected){
-            \common_session_SessionManager::startSession(new \common_test_TestUserSession());
-            self::$connected = true;
-        }
-    }
 
     /**
      * Call protected/private method of a class.

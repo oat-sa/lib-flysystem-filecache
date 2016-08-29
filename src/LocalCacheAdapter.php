@@ -174,13 +174,12 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         $result = $this->remoteStorage->readStream($path);
         if($result !== false ) { 
+            $localResource = $this->copyStream($result['stream']);
             if($this->synchronous) {
                 $config = $this->setConfigFromResult($result);
-                $this->localStorage->writeStream($path , $result['stream'] , $config);
-                fclose($result['stream']);
+                $this->localStorage->writeStream($path , $localResource , $config);
                 $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
-                $localResource = $this->copyStream($result['stream']);
                 $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
             }
         }
@@ -468,7 +467,8 @@ class LocalCacheAdapter extends AbstractAdapter
     */
     protected function setConfigFromResult(array $result) { 
         
-        $config = new Config();
+        $config = $this->getConfig();
+        
         foreach ($this->requiredConfig as $param => $method) {
             if(array_key_exists($param, $result)) {
                 $config->set($param, $result[$param]);
@@ -479,7 +479,12 @@ class LocalCacheAdapter extends AbstractAdapter
         return $config;
         
     }
-    /**
+    
+    protected function newConfig() {
+        return new Config();
+    }
+
+        /**
      * return set property to config from remote file
      * @param type $path
      * @param type $property

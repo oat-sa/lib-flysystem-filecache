@@ -17,7 +17,6 @@
  * Copyright (c) 2016 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  *
  */
-
 namespace oat\flysystem\test\filecache\cache\metadata;
 
 /**
@@ -25,18 +24,21 @@ namespace oat\flysystem\test\filecache\cache\metadata;
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
-class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper 
+class PhpStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper 
 {
     
     public function setUp() {
-        $this->instance = new \oat\flysystem\Adapter\Cache\Metadata\JsonStorage();
+        $this->instance = new \oat\flysystem\Adapter\Cache\Metadata\PhpStorage();
     }
     
     public function testWriteFile() {
         
+        $this->instance = $this->getMock(\oat\flysystem\Adapter\Cache\Metadata\PhpStorage::class , ['toPhpCode']);
+        
         \org\bovigo\vfs\vfsStream::setup('var');
         
-        $file = \org\bovigo\vfs\vfsStream::url('var/test1.txt');
+        $file = \org\bovigo\vfs\vfsStream::url('var/test1.php');
+        
         
         $now = time();
         $size = rand(1024, 4096);
@@ -49,18 +51,28 @@ class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper
             'filename' => 'test',
             ];
         
+        $expected = '<?php return ' . var_export($meta, true) . ';';
+        
+        $this->instance
+                ->expects($this->once())
+                ->method('toPhpCode')
+                ->with($meta)
+                ->willReturn($expected);
+        
         $this->assertNotFalse($this->invokeProtectedMethod($this->instance, 'writeFile' , [$file , $meta]));
-        $this->assertSame(json_encode($meta), file_get_contents($file));
+        $this->assertSame($expected, file_get_contents($file));
     }
     
     public function testReadFile() {
+        
         \org\bovigo\vfs\vfsStream::setup('var');
         
-        $filename = \org\bovigo\vfs\vfsStream::url('var/test1.txt');
-        $fileTest = \org\bovigo\vfs\vfsStream::url('var/test2.txt');
+        $filename = \org\bovigo\vfs\vfsStream::url('var/test1.php');
+        $fileTest = \org\bovigo\vfs\vfsStream::url('var/test2.php');
         
         $now = time();
         $size = rand(1024, 4096);
+        
         $meta = [
             'mimetype' => 'text/html',
             'size'     => $size,
@@ -68,12 +80,28 @@ class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper
             'basename' => 'test.html',
             'extension'=> 'html',
             'filename' => 'test',
-            ];
+        ];
         
-        file_put_contents($filename, json_encode($meta));
+        $data = '<?php return ' . var_export($meta, true) . ';';
+
+        file_put_contents($filename, $data);
         
-        $this->assertSame($meta, $this->invokeProtectedMethod($this->instance, 'readFile' , [$filename]));
         $this->assertFalse($this->invokeProtectedMethod($this->instance, 'readFile' , [$fileTest]));
+        $this->assertSame($meta , $this->invokeProtectedMethod($this->instance, 'readFile' , [$filename]));
+        
+    }
+    
+    public function testToPhpCode() {
+         $meta = [
+            'mimetype' => 'text/html',
+            'basename' => 'test.html',
+            'extension'=> 'html',
+            'filename' => 'test',
+        ];
+        
+        $expected = '<?php return ' . var_export($meta, true) . ';';
+        
+        $this->assertSame($expected , $this->invokeProtectedMethod($this->instance, 'toPhpCode' , [$meta]));
     }
 
     public function tearDown() {

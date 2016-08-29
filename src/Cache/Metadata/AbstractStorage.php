@@ -53,13 +53,13 @@ abstract class AbstractStorage implements StorageInterface
         foreach ($this->properties as $property) {
             if($data->has($property)) {
                 $value = $data->get($property);
-                $this->setParam($result, $property, $value);
+                $result = $this->setParam($result, $property, $value);
             }
         }
         return $result;
     }
     
-    protected function setParam(&$result , $property , $value) {
+    protected function setParam($result , $property , $value) {
         if(!empty($value)) {
             $result[$property] = $value;
         }

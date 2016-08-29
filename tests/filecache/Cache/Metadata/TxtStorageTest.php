@@ -25,11 +25,11 @@ namespace oat\flysystem\test\filecache\cache\metadata;
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
-class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper 
+class TxtStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper 
 {
     
     public function setUp() {
-        $this->instance = new \oat\flysystem\Adapter\Cache\Metadata\JsonStorage();
+        $this->instance = new \oat\flysystem\Adapter\Cache\Metadata\TxtStorage();
     }
     
     public function testWriteFile() {
@@ -50,7 +50,7 @@ class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper
             ];
         
         $this->assertNotFalse($this->invokeProtectedMethod($this->instance, 'writeFile' , [$file , $meta]));
-        $this->assertSame(json_encode($meta), file_get_contents($file));
+        $this->assertSame(serialize($meta), file_get_contents($file));
     }
     
     public function testReadFile() {
@@ -70,7 +70,7 @@ class JsonStorageTest extends \oat\flysystem\test\helper\PhpUnitTestHelper
             'filename' => 'test',
             ];
         
-        file_put_contents($filename, json_encode($meta));
+        file_put_contents($filename, serialize($meta));
         
         $this->assertSame($meta, $this->invokeProtectedMethod($this->instance, 'readFile' , [$filename]));
         $this->assertFalse($this->invokeProtectedMethod($this->instance, 'readFile' , [$fileTest]));

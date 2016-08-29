@@ -21,9 +21,10 @@ class TxtStorage extends AbstractFileStorage {
      * {@inheritdoc}
      */
     protected function readFile($path) {
-        if(fileExists($path)) {
+        if(file_exists($path)) {
             return unserialize(file_get_contents($path) );
         }
+        return false;
     }
     
     /**

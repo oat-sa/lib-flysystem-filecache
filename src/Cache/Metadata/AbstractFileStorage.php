@@ -57,7 +57,12 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     protected function getFromMemory($path, $key = null) {
         if(array_key_exists($path, $this->memoryCache)) {
-            return (is_null($key)?$this->memoryCache[$path]:$this->memoryCache[$path][$key]);
+            if(is_null($key)) {
+                return $this->memoryCache[$path];
+            }
+            if(array_key_exists($key, $this->memoryCache[$path])) {
+                return $this->memoryCache[$path][$key];
+            }
         }
         return false;
     }
@@ -129,14 +134,15 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     public function get($path, $key) {
         
-        if(($result = $this->getFromMemory($path)) === false) {
+        if(($result = $this->getFromMemory($path, $key)) === false) {
             $cacheFile = $this->getCachePath($path);
              if(file_exists($cacheFile)) {
                 $result = $this->readFile($cacheFile);
                 return (array_key_exists($key, $result))?[$key => $result[$key]] : false;
             }
+            return false;
         }
-        return false;
+        return [$key => $result];
     }
     
     /**
@@ -173,6 +179,9 @@ abstract class AbstractFileStorage extends AbstractStorage
         $this->load($path);
         $cacheFile = $this->getCachePath($path);
         $data = $this->getFromMemory($path);
+        if($data === false) {
+            $data = [];
+        }
         $data[$key] = $value;
         $this->writeFile($cacheFile , $data);
         $this->setToMemory($path, $data);
