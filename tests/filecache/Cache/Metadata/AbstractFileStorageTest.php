@@ -435,8 +435,6 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
         
         $fixturePath   = 'test.txt';
         $fixtureCache  = '.test.txt.json';
-        $fixtureKey    = 'mimetype'; 
-        $fixtureValue  = 'application/csv';
         
         $fixtureSettings = [
             'custom'   => 'test',

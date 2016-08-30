@@ -59,7 +59,7 @@ class ApcuStorage extends AbstractStorage {
         if(apcu_exists($path)) {
             $data = apcu_fetch($path);
             if(array_key_exists($key, $data)) {
-                return $data[$key];
+                return [$key => $data[$key]];
             }
         }
         return false;
