@@ -8,14 +8,44 @@ It use two storage, a remote location and a local location.
 Local location has priority on read operation.
 All write operation are made on both.
 
-usage : 
-
+usage :
+ 
+```php
 $remote = new League\Flysystem\AwsS3V3\AwsS3Adapter(...);
 $local = new League\Flysystem\Adapter\Local(...);
 
+$synchronous = true;
+
+$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$synchronous);
+```
+
+That's possible to use a specific Local adapter using a metadata cache module. It can store localy 
+metadata set up explicitly in your remote storage.
+
+let library decide which cache adapter is better to use
+
+```php
+$cache = oat\flysystem\Adapter\Cache\MetaDataFactory::build();
+
+$remote = new League\Flysystem\AwsS3V3\AwsS3Adapter(...);
+$local = new League\Flysystem\Adapter\Cache\LocalCopy($myPath , $cache);
+
 $autosave = true;
 
-$adapter = new oat\LibFlysystemFilecache\model\flysystem\DualStorageAdapter($remote, $local ,autosave);
+$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$autosave);
+```
 
+use a specific cache : 
+
+```php
+$cache = new oat\flysystem\Adapter\Cache\Metadata\{TxtStorage|JsonStorage|PhpStorage|ApcuStorage}();
+
+$remote = new League\Flysystem\AwsS3V3\AwsS3Adapter(...);
+$local = new League\Flysystem\Adapter\Cache\LocalCopy($myPath , $cache);
+
+$autosave = true;
+
+$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$autosave);
+```
 
 see http://flysystem.thephpleague.com/ to configure your adapters
