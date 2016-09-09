@@ -467,7 +467,7 @@ class LocalCacheAdapter extends AbstractAdapter
     */
     protected function setConfigFromResult(array $result) { 
         
-        $config = $this->getConfig();
+        $config = $this->newConfig();
         
         foreach ($this->requiredConfig as $param => $method) {
             if(array_key_exists($param, $result)) {

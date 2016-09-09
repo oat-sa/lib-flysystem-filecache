@@ -488,7 +488,7 @@ class LocalCacheAdapterTest extends PhpUnitTestHelper
         
         $this->instance = $this->getMock(
                 LocalCacheAdapter::class , 
-                ['getPropertyFromRemote' , 'getConfig' ],
+                ['getPropertyFromRemote' , 'newConfig' ],
                 [$remoteMock , $localMock],
                 '',
                 true
@@ -496,7 +496,7 @@ class LocalCacheAdapterTest extends PhpUnitTestHelper
         
         $this->instance
                 ->expects($this->once())
-                ->method('getConfig')
+                ->method('newConfig')
                 ->willReturn($config);
         
         $this->instance
