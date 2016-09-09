@@ -9,7 +9,8 @@
 namespace oat\flysystem\Adapter\Cache\Metadata;
 
 /**
- * Description of TxtStorage
+ * Store explicite metadata in plain text file as
+ * serialysed php array
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */

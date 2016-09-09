@@ -23,7 +23,7 @@ namespace oat\flysystem\Adapter\Cache\Metadata;
 use League\Flysystem\Config;
 
 /**
- * store file metadata in a json file
+ * store file metadata in a php file as an array
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
 class PhpStorage extends AbstractFileStorage

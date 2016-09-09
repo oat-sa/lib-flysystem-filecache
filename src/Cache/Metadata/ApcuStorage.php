@@ -21,7 +21,7 @@
 namespace oat\flysystem\Adapter\Cache\Metadata;
 
 /**
- * Description of ApcuStorage
+ * Store explicite metadata in apcu
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */

@@ -23,7 +23,7 @@ use League\Flysystem\Adapter\Local;
 use League\Flysystem\Config;
 use oat\flysystem\Adapter\Cache\Metadata\StorageInterface;
 /**
- * Description of LocalCopy
+ * Save file localy and store explicite metadata in a cache system
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
@@ -37,6 +37,7 @@ class LocalCopy extends Local
      * Constructor.
      *
      * @param string $root
+     * @param StorageInterface $metadata
      * @param int    $writeFlags
      * @param int    $linkHandling
      * @param array  $permissions

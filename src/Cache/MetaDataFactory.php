@@ -21,7 +21,8 @@
 namespace oat\flysystem\Adapter\Cache;
 
 /**
- * Description of MetaDataFactory
+ * factory using metadata storage stategy to define
+ * which one is better
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
@@ -35,7 +36,10 @@ class MetaDataFactory {
     ];
     
     protected static $ns = '\\oat\\flysystem\\Adapter\\Cache\\Metadata';
-
+    /**
+     * return better metadata storage instance
+     * @return \oat\flysystem\Adapter\Cache\AbstractStorage
+     */
     static function build() {
         foreach (self::$classes as $adapter) {
             $className = self::$ns . '\\' . $adapter . 'Storage';

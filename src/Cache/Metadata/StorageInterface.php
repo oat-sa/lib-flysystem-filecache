@@ -20,7 +20,8 @@
 
 namespace oat\flysystem\Adapter\Cache\Metadata;
 /**
- *
+ * base interface for metadata cache storage
+ * 
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
 interface StorageInterface {

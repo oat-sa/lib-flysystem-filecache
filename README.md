@@ -16,7 +16,7 @@ $local = new League\Flysystem\Adapter\Local(...);
 
 $synchronous = true;
 
-$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$synchronous);
+$adapter = new oat\flysystem\Adapter\LocalCacheAdapter($remote, $local ,$synchronous);
 ```
 
 That's possible to use a specific Local adapter using a metadata cache module. It can store localy 
@@ -32,7 +32,7 @@ $local = new League\Flysystem\Adapter\Cache\LocalCopy($myPath , $cache);
 
 $autosave = true;
 
-$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$autosave);
+$adapter = new oat\flysystem\Adapter\LocalCacheAdapter($remote, $local ,$autosave);
 ```
 
 use a specific cache : 
@@ -45,7 +45,7 @@ $local = new League\Flysystem\Adapter\Cache\LocalCopy($myPath , $cache);
 
 $autosave = true;
 
-$adapter = new oat\flysystem\Adapter\DualStorageAdapter($remote, $local ,$autosave);
+$adapter = new oat\flysystem\Adapter\LocalCacheAdapter($remote, $local ,$autosave);
 ```
 
 see http://flysystem.thephpleague.com/ to configure your adapters

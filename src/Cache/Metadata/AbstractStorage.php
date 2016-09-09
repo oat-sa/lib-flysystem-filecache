@@ -23,7 +23,7 @@ namespace oat\flysystem\Adapter\Cache\Metadata;
 use League\Flysystem\Config;
 
 /**
- * Description of AbstractStorage
+ * Abstract explicite metadata storage
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
