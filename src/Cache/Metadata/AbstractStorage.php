@@ -45,7 +45,7 @@ abstract class AbstractStorage implements StorageInterface
     
      /**
      * return filtered metadata
-     * @param array $data
+     * @param Config $data
      * @return array
      */
     protected function parseData(Config $data) {

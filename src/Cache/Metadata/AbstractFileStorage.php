@@ -38,15 +38,18 @@ abstract class AbstractFileStorage extends AbstractStorage
     protected $cacheExtension = '';
 
     protected $cacheDirectoryName = '.meta';
-    
+
+    protected $isLoaded = false;
+
     /**
      * return file parse content or false
      * @return array|boolean
      */
     abstract protected function readFile($path);
-    
+
     /**
-     * serialyse data and write in cache file
+     * @param $path
+     * @param array $data
      * @return boolean
      */
     abstract protected function writeFile($path , array $data);
@@ -74,7 +77,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      * @param string $path
      * @param mixed $value
      * @param string $key
-     * @return \oat\flysystem\Adapter\JsonStorage
+     * @return $this
      */
     protected function setToMemory($path , $value , $key = null) {
         if(is_null($key)) {
@@ -157,6 +160,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      * {@inheritdoc}
      */
     public function load($path) {
+        $this->isLoaded = true;
         if(($result = $this->getFromMemory($path)) !== false) {
             return $result;
         }
@@ -173,6 +177,9 @@ abstract class AbstractFileStorage extends AbstractStorage
      * {@inheritdoc}
      */
     public function save($path, Config $data) {
+        if(!$this->isLoaded) {
+            $this->load($path);
+        }
         $cache = $this->parseData($data);
         $this->setToMemory($path, $cache);
         $cacheFile = $this->getCachePath($path);

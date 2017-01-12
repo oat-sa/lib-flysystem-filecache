@@ -461,8 +461,12 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
         $Config = new \League\Flysystem\Config($fixtureSettings);
         
         $this->instance = $this->getMockForAbstractClass(\oat\flysystem\Adapter\Cache\Metadata\AbstractFileStorage::class, [], '', false , false, true ,
-                ['parseData' , 'getCachePath' , 'writeFile' , 'setToMemory']);
-        
+                ['parseData' , 'getCachePath' , 'writeFile' , 'setToMemory' , 'load']);
+
+        $this->instance->expects($this->once())
+            ->method('load')
+            ->with($fixturePath)
+            ->willReturn($fixtureCache);
         
         $this->instance->expects($this->once())
                 ->method('getCachePath')

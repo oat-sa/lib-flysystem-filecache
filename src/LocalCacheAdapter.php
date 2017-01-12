@@ -115,6 +115,7 @@ class LocalCacheAdapter extends AbstractAdapter
     /**
      * change auto save value
      * @param boolean $synchronous
+     * @return $this
      */
     public function setSynchronous($synchronous) {
         $this->synchronous = boolval($synchronous);
@@ -484,7 +485,7 @@ class LocalCacheAdapter extends AbstractAdapter
         return new Config();
     }
 
-        /**
+    /**
      * return set property to config from remote file
      * @param type $path
      * @param type $property
