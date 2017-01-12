@@ -107,12 +107,14 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
         $this->instance = $this->getMockForAbstractClass(\oat\flysystem\Adapter\Cache\Metadata\AbstractFileStorage::class, [], '', false , false, true ,[]);
         
         $fixtureExtension = 'txt';
-        
+        $fixtureDirectory = '.meta';
+
         $fixturePath = 'root/var/test.html';
-        $expected    = 'root/var/.test.html.' . $fixtureExtension;
-        
+        $expected    = 'root/var/' . $fixtureDirectory . '/test.html.' . $fixtureExtension;
+
+        $this->setInaccessibleProperty($this->instance, 'cacheDirectoryName', $fixtureDirectory);
         $this->setInaccessibleProperty($this->instance, 'cacheExtension', $fixtureExtension);
-        
+
         $this->assertSame($expected, $this->invokeProtectedMethod($this->instance, 'getCachePath' , [$fixturePath]));
         
     }

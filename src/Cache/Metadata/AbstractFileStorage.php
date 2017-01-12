@@ -36,6 +36,8 @@ abstract class AbstractFileStorage extends AbstractStorage
     protected $memoryCache = [];
     
     protected $cacheExtension = '';
+
+    protected $cacheDirectoryName = '.meta';
     
     /**
      * return file parse content or false
@@ -91,8 +93,14 @@ abstract class AbstractFileStorage extends AbstractStorage
     protected function getCachePath($path) {
         
         $infos = pathinfo($path);
-        return $infos['dirname'] . DIRECTORY_SEPARATOR . '.' . $infos['basename'] . '.' . $this->cacheExtension; 
-        
+        $path  = $infos['dirname'] . DIRECTORY_SEPARATOR;
+
+        if(!empty($this->cacheDirectoryName)) {
+            $path .= $this->cacheDirectoryName . DIRECTORY_SEPARATOR;
+        }
+
+        $path .= $infos['basename'] . '.' . $this->cacheExtension;
+        return $path;
     }
     
     /**
