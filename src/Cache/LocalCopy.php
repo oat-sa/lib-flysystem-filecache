@@ -22,6 +22,8 @@ namespace oat\flysystem\Adapter\Cache;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Config;
 use oat\flysystem\Adapter\Cache\Metadata\StorageInterface;
+use oat\flysystem\Adapter\Utils\MimeType;
+
 /**
  * Save file localy and store explicite metadata in a cache system
  *
@@ -34,13 +36,12 @@ class LocalCopy extends Local
 
 
     /**
-     * Constructor.
-     *
+     * LocalCopy constructor.
      * @param string $root
      * @param StorageInterface $metadata
-     * @param int    $writeFlags
-     * @param int    $linkHandling
-     * @param array  $permissions
+     * @param int $writeFlags
+     * @param array|int $linkHandling
+     * @param array $permissions
      */
     public function __construct($root, StorageInterface $metadata , $writeFlags = LOCK_EX, $linkHandling = self::DISALLOW_LINKS, array $permissions = [])
     {
@@ -70,7 +71,11 @@ class LocalCopy extends Local
         if(($result = $this->metadata->get($this->applyPathPrefix($path), 'mimetype')) !== false) {
             return $result;
         }
-        $mimeType = parent::getMimetype($path);
+        $mimeType = [
+            'path'         => $path,
+            'mimtype'      => MimeType::detectByFilename($path)
+        ];
+
         $this->metadata->set($this->applyPathPrefix($path), 'mimetype', $mimeType['mimetype']);
         return $mimeType;
     }
