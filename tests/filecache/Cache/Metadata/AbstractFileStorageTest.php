@@ -99,7 +99,7 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
         $this->assertSame($this->instance, $this->invokeProtectedMethod($this->instance, 'setToMemory' , [$path , $value , $key ]));
         
         $memory = $this->getInaccessibleProperty($this->instance, 'memoryCache');
-        $this->assertSame($expected , $memory[$path] );
+        $this->assertSame(ksort($expected) , ksort($memory[$path]) );
     }
     
     public function testGetCachePath() {
@@ -355,11 +355,11 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
                 ->method('getCachePath')
                 ->with($fixturePath)
                 ->willReturn($fixtureCache);
-        
-        $this->instance->expects($this->once())
-                ->method('getFromMemory')
-                ->with($fixturePath)
-                ->willReturn(false);
+
+        $this->instance->expects($this->exactly(2))
+            ->method('getFromMemory')
+            ->with($fixturePath)
+            ->willReturnOnConsecutiveCalls(false , [$fixtureKey => $fixtureValue]);
         
         $this->instance->expects($this->once())
                 ->method('writeFile')
@@ -461,7 +461,7 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
         $Config = new \League\Flysystem\Config($fixtureSettings);
         
         $this->instance = $this->getMockForAbstractClass(\oat\flysystem\Adapter\Cache\Metadata\AbstractFileStorage::class, [], '', false , false, true ,
-                ['parseData' , 'getCachePath' , 'writeFile' , 'setToMemory' , 'load']);
+                ['parseData' , 'getCachePath' , 'writeFile' , 'setToMemory' , 'load' , 'getFromMemory']);
 
         $this->instance->expects($this->once())
             ->method('load')
@@ -487,6 +487,11 @@ class AbstractFileStorageTest  extends \oat\flysystem\test\helper\PhpUnitTestHel
                 ->method('setToMemory')
                 ->with($fixturePath , $meta)
                 ->willReturn($this->instance);
+
+        $this->instance->expects($this->once())
+            ->method('getFromMemory')
+            ->with($fixturePath)
+            ->willReturn($meta);
         
         $this->assertSame($this->instance ,  $this->instance->save($fixturePath , $Config));
         
