@@ -38,7 +38,7 @@ class MetaDataFactory {
     protected static $ns = '\\oat\\flysystem\\Adapter\\Cache\\Metadata';
     /**
      * return better metadata storage instance
-     * @return \oat\flysystem\Adapter\Cache\AbstractStorage
+     * @return \oat\flysystem\Adapter\Cache\Metadata\AbstractStorage
      */
     static function build() {
         foreach (self::$classes as $adapter) {
