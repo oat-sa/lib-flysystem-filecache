@@ -27,14 +27,14 @@ use League\Flysystem\Config;
  *
  * @author Christophe GARCIA <christopheg@taotesting.com>
  */
-abstract class AbstractFileStorage extends AbstractStorage 
+abstract class AbstractFileStorage extends AbstractStorage
 {
     /**
      * cache data in memory to improve performance
      * @var array
      */
     protected $memoryCache = [];
-    
+
     protected $cacheExtension = '';
 
     protected $cacheDirectoryName = '.meta';
@@ -53,7 +53,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      * @return boolean
      */
     abstract protected function writeFile($path , array $data);
-    
+
     /**
      * get data from memory cache
      * @param string $path
@@ -81,20 +81,20 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     protected function setToMemory($path , $value , $key = null) {
         if(is_null($key)) {
-            $this->memoryCache[$path] = $value;
+            $this->memoryCache[$path] = isset($this->memoryCache[$path])?array_merge($this->memoryCache[$path] , $value): $value;
         } else {
             $this->memoryCache[$path][$key] = $value;
         }
         return $this;
     }
-    
+
     /**
      * get cache file path from original file path
      * @param string $path
      * @return string
      */
     protected function getCachePath($path) {
-        
+
         $infos = pathinfo($path);
         $path  = $infos['dirname'] . DIRECTORY_SEPARATOR;
 
@@ -107,7 +107,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         $path .= $infos['basename'] . '.' . $this->cacheExtension;
         return $path;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -118,7 +118,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return $this;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -129,7 +129,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return $this;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -141,15 +141,15 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return $this;
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function get($path, $key) {
-        
+
         if(($result = $this->getFromMemory($path, $key)) === false) {
             $cacheFile = $this->getCachePath($path);
-             if(file_exists($cacheFile)) {
+            if(file_exists($cacheFile)) {
                 $result = $this->readFile($cacheFile);
                 return (array_key_exists($key, $result))?[$key => $result[$key]] : false;
             }
@@ -157,7 +157,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return [$key => $result];
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -174,7 +174,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return false;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -183,12 +183,12 @@ abstract class AbstractFileStorage extends AbstractStorage
             $this->load($path);
         }
         $cache = $this->parseData($data);
-        $this->setToMemory($path, $cache);
+        $cache = $this->setToMemory($path, $cache)->getFromMemory($path);
         $cacheFile = $this->getCachePath($path);
         $this->writeFile($cacheFile , $cache);
         return $this;
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -200,8 +200,9 @@ abstract class AbstractFileStorage extends AbstractStorage
             $data = [];
         }
         $data[$key] = $value;
+        $data = $this->setToMemory($path, $data)->getFromMemory($path);
         $this->writeFile($cacheFile , $data);
-        $this->setToMemory($path, $data);
+
         return $this;
     }
 }
