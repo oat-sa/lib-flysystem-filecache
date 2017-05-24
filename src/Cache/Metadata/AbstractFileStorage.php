@@ -81,7 +81,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     protected function setToMemory($path , $value , $key = null) {
         if(is_null($key)) {
-            $this->memoryCache[$path] = isset($this->memoryCache[$path])?array_merge($this->memoryCache[$path] , $value): $value;
+            $this->memoryCache[$path] = isset($this->memoryCache[$path])?array_merge( $value , $this->memoryCache[$path]): $value;
         } else {
             $this->memoryCache[$path][$key] = $value;
         }
