@@ -18,6 +18,14 @@ use oat\flysystem\Adapter\LocalCacheAdapter;
 class LocalCachedS3Factory extends AbstractFlysystemFactory
 {
 
+    const OPTION_BUCKET = 'bucket';
+
+    const OPTION_PREFIX = 'prefix';
+
+    const OPTION_CLIENT = 'client';
+
+    const OPTION_PATH   = 'path';
+
     const CLIENT_SERVICE = 'generis/awsClient';
 
     public function getClient()
