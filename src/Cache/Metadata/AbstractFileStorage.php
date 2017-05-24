@@ -101,7 +101,9 @@ abstract class AbstractFileStorage extends AbstractStorage
         if(!empty($this->cacheDirectoryName)) {
             $path .= $this->cacheDirectoryName . DIRECTORY_SEPARATOR;
         }
-
+        if(!is_dir($path)) {
+            mkdir($path);
+        }
         $path .= $infos['basename'] . '.' . $this->cacheExtension;
         return $path;
     }
