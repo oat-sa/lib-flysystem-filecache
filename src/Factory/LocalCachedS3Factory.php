@@ -11,6 +11,7 @@ namespace oat\flysystem\Adapter\Factory;
 use oat\awsTools\factory\AbstractFlysystemFactory;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use oat\flysystem\Adapter\Cache\LocalCopy;
+use oat\flysystem\Adapter\Cache\Metadata\AbstractStorage;
 use oat\flysystem\Adapter\Cache\Metadata\PhpStorage;
 use oat\flysystem\Adapter\Cache\Metadata\StorageInterface;
 use oat\flysystem\Adapter\Cache\MetaDataFactory;
@@ -39,10 +40,22 @@ class LocalCachedS3Factory extends AbstractFlysystemFactory
 
         $remote = new AwsS3Adapter($this->getClient(), $options[self::OPTION_BUCKET], $options[self::OPTION_PREFIX]);
 
+        if(isset($options['metaStorage']) && is_subclass_of($options['metaStorage'] , AbstractStorage::class)) {
+            /**
+             * specified metadata cache storage
+             */
+            $storageClass = $options['metaStorage'];
+            $cache = new $storageClass();
+        } else {
+            /**
+             * auto detect from config
+             */
+            $cache = MetaDataFactory::build();
+        }
         /**
          * @var $cache StorageInterface
          */
-        $cache = new PhpStorage();//MetaDataFactory::build();
+
         $local = new LocalCopy($options[self::OPTION_PATH] , $cache);
         $adapter = new LocalCacheAdapter($remote, $local, true);
 
