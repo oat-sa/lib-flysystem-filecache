@@ -71,18 +71,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return false;
     }
-
-    protected function eraseOldValues($path , array $values) {
-        $this->load($path);
-        if(!isset($this->memoryCache[$path])) {
-            $this->memoryCache[$path] = [];
-        }
-        foreach ($values as $key => $value) {
-            $this->memoryCache[$path][$key] = $value;
-        }
-        return $this;
-    }
-
+    
     /**
      * save data in memory
      * @param string $path
@@ -92,7 +81,7 @@ abstract class AbstractFileStorage extends AbstractStorage
      */
     protected function setToMemory($path , $value , $key = null) {
         if(is_null($key)) {
-            return $this->eraseOldValues($path , $value);
+            $this->memoryCache[$path] = isset($this->memoryCache[$path])?array_merge( $value , $this->memoryCache[$path]): $value;
         } else {
             $this->memoryCache[$path][$key] = $value;
         }
