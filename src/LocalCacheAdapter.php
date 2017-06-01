@@ -149,7 +149,7 @@ class LocalCacheAdapter extends AbstractAdapter
         $result = $this->remoteStorage->read($path);
         if($result !== false) {
             if($this->synchronous) {
-                $config = $this->setConfigFromResult($result);
+                $config = $this->setConfigFromResult($result , $this->newConfig());
                 $this->localStorage->write($path , $result['contents'] , $config);
             } elseif($result !== false) {
                 $this->deferedSave[] = $result;
@@ -177,7 +177,7 @@ class LocalCacheAdapter extends AbstractAdapter
         if($result !== false ) { 
             $localResource = $this->copyStream($result['stream']);
             if($this->synchronous) {
-                $config = $this->setConfigFromResult($result);
+                $config = $this->setConfigFromResult($result , $this->newConfig());
                 $this->localStorage->writeStream($path , $localResource , $config);
                 $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
@@ -273,7 +273,7 @@ class LocalCacheAdapter extends AbstractAdapter
     {
         $result = $this->remoteStorage->write($path, $contents, $config);
         if($this->synchronous) {
-            $this->localStorage->write($path, $contents, $this->setConfigFromResult($result));
+            $this->localStorage->write($path, $contents, $this->setConfigFromResult($result , $config));
         } else {
             $this->deferedSave[] = array_merge($result , ['path' => $path]);
         }
@@ -294,7 +294,7 @@ class LocalCacheAdapter extends AbstractAdapter
         $result = $this->remoteStorage->writeStream($path, $resource, $config);
         $localResource = $this->copyStream($resource);
         if($this->synchronous) {
-            $this->localStorage->writeStream($path, $localResource, $this->setConfigFromResult($result));
+            $this->localStorage->writeStream($path, $localResource, $this->setConfigFromResult($result , $config));
         } else {
             $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
         }
@@ -466,9 +466,7 @@ class LocalCacheAdapter extends AbstractAdapter
     * @param array $result
     * @return Config
     */
-    protected function setConfigFromResult(array $result) { 
-        
-        $config = $this->newConfig();
+    protected function setConfigFromResult(array $result , Config $config) {
         
         foreach ($this->requiredConfig as $param => $method) {
             if(array_key_exists($param, $result)) {

@@ -71,7 +71,7 @@ abstract class AbstractFileStorage extends AbstractStorage
         }
         return false;
     }
-    
+
     /**
      * save data in memory
      * @param string $path
@@ -195,14 +195,12 @@ abstract class AbstractFileStorage extends AbstractStorage
     public function set($path, $key, $value) {
         $this->load($path);
         $cacheFile = $this->getCachePath($path);
-        $data = $this->getFromMemory($path);
+        $data = $this->getFromMemory($path , $key);
         if($data === false) {
-            $data = [];
+            $data[$key] = $value;
+            $data = $this->setToMemory($path, $data , $key)->getFromMemory($path , $key);
+            $this->writeFile($cacheFile , $data);
         }
-        $data[$key] = $value;
-        $data = $this->setToMemory($path, $data)->getFromMemory($path);
-        $this->writeFile($cacheFile , $data);
-
         return $this;
     }
 }
