@@ -6,13 +6,12 @@
  * Time: 10:12
  */
 
-namespace oat\libFlysystemFilecache\test;
-
+namespace oat\flysystem\test\filecache;
 
 use oat\flysystem\Adapter\LocalCacheAdapter;
-use oat\tao\test\TaoPhpUnitTestRunner;
+use oat\flysystem\test\helper\PhpUnitTestHelper;
 
-class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
+class LocalCacheAdapterTest extends PhpUnitTestHelper
 {
     /**
      * @var LocalCacheAdapter
@@ -201,6 +200,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $expectedSave = [];
         
         if($remoteResult !== false && $synchronous) {
+            
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
             
@@ -223,72 +223,149 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $this->setInaccessibleProperty($this->instance, 'deferedSave' , []);
     }
     
-    public function readStreamProvider() {
-        
-        $tmp1 = tmpfile();
-        $tmp2 = tmpfile();
-        
-        return 
-        [
-            ['test1.txt' , ['path' => 'test1.txt','stream' => $tmp1], false              , true  , ['path' => 'test1.txt',  'stream' => $tmp1]],
-            ['test2.txt' , false              , ['path' => 'test2.txt' , 'stream' => $tmp2], true  , ['path' => 'test2.txt', 'stream' => $tmp2]],
-            ['test3.txt' , false              , false              , true  , false],
-            ['test1.txt' , ['path' => 'test1.txt','stream' => $tmp1], false              , false , ['path' => 'test1.txt', 'stream' => $tmp1]],
-            ['test2.txt' , false              , ['path' => 'test2.txt' , 'stream' => $tmp2], false , ['path' => 'test2.txt', 'stream' => $tmp2]],
-            ['test3.txt' , false              , false              , false , false],
-        ];
-        
-    }
-
-        /**
-     * @dataProvider readStreamProvider
-     * @param string $path
-     * @param array|boolean $localResult
-     * @param array|boolean $remoteResult
-     * @param mixed $expected
-     */
-    public function testReadStream($path , $localResult , $remoteResult, $synchronous , $expected) {
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+    public function testReadStreamLocal() {
+        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
+       
+        $fixturepath = "test.txt";
+        
+        $return  = [
+            'path'     => 'test.txt',
+            'stream'   => tmpfile(),
+            'mimetype' => 'text/plain',
+            ];
+        $localProphet->has($fixturepath)->willReturn(true);
+        $localProphet->readStream($fixturepath)->willReturn($return);
+        
+        $localMock    = $localProphet->reveal();
+        $remoteMock   = $remoteProphet->reveal();
+        
+        $this->instance = new LocalCacheAdapter($remoteMock , $localMock);
+        $this->assertSame($return, $this->instance->readStream($fixturepath));
+    }
+    
+    public function testReadStreamRemonteFalse() {
+        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+      
+        
+        $fixturepath = "test.txt";
+
+        $localProphet->has($fixturepath)->willReturn(false);
+        $remoteProphet->readStream($fixturepath)->willReturn(false);
+        
+        $localMock    = $localProphet->reveal();
+        $remoteMock   = $remoteProphet->reveal();
+        
+        $this->instance = new LocalCacheAdapter($remoteMock , $localMock);
+        $this->assertFalse($this->instance->readStream($fixturepath));
+    }
+    
+    public function testReadStreamRemonteSync() {
+        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $config        = $this->prophesize('League\Flysystem\Config')->reveal();
+        
+        $remoteResource = tmpfile();
+        $copyResource   = tmpfile();
+        $localResource = tmpfile();
+        
+        $returnRemote  = [
+            'path'     => 'test.txt',
+            'stream'   => $remoteResource,
+            'mimetype' => 'text/plain',
+            ];
+        
+        $returnLocal  = [
+            'path'     => 'test.txt',
+            'stream'   => $localResource,
+            'mimetype' => 'text/plain',
+            ];
+        
+        $fixturepath = "test.txt";
+
+        $localProphet->has($fixturepath)->willReturn(false);
+        $remoteProphet->readStream($fixturepath)->willReturn($returnRemote);
+        
+        $localProphet->writeStream($fixturepath , $copyResource ,  $config)->willReturn(['path' => $fixturepath]);
+        $localProphet->readStream($fixturepath)->willReturn($returnLocal);
+        
+        $localMock    = $localProphet->reveal();
+        $remoteMock   = $remoteProphet->reveal();
         
         $this->instance = $this->getMock(
                 'oat\flysystem\Adapter\LocalCacheAdapter' , 
-                ['setConfigFromResult'],
+                ['setConfigFromResult' , '__destruct' , 'copyStream'],
                 [],
                 '',
                 false
                 );
         
-        $localProphet->has($path)->willReturn($localResult);
+        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
+        $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
+        $this->setInaccessibleProperty($this->instance, 'synchronous'  , true);
         
-        $expectedSave = [];
+         $this->instance
+                ->expects($this->once())
+                ->method('copyStream')
+                ->willReturn($copyResource);
         
-        if($localResult === false) {
-            $remoteProphet->readStream($path)->willReturn($remoteResult);
-        } else {
-            $localProphet->readStream($path)->willReturn($localResult);
-        }
+        $this->instance
+                ->expects($this->once())
+                ->method('setConfigFromResult')
+                ->with($returnRemote)
+                ->willReturn($config);
         
-        if($remoteResult !== false && $synchronous) {
-            $this->instance->expects($this->once())->method('setConfigFromResult')
-                ->with($remoteResult)->willReturn($config);
-            $localProphet->writeStream($path , $remoteResult['stream'] , $config)->willReturn($remoteResult);
-            $localProphet->readStream($path)->willReturn($remoteResult);
-        } elseif($remoteResult !== false) {
-            $expectedSave[] =  $remoteResult;
-        }
+        $this->assertSame( $returnLocal , $this->instance->readStream($fixturepath));
+    }
+    
+    public function testReadStreamRemonteAsync() {
+        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $config        = $this->prophesize('League\Flysystem\Config')->reveal();
+        
+        $remoteResource = tmpfile();
+        $localResource = tmpfile();
+        
+        $returnRemote  = [
+            'path'     => 'test.txt',
+            'stream'   => $remoteResource,
+            'mimetype' => 'text/plain',
+            ];
+        
+        $expected = [
+            'path'     => 'test.txt',
+            'stream'   => $localResource,
+            'mimetype' => 'text/plain',
+            ];
+        
+        $fixturepath = "test.txt";
+
+        $localProphet->has($fixturepath)->willReturn(false);
+        $remoteProphet->readStream($fixturepath)->willReturn($returnRemote);
         
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
-        $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
-        $this->setInaccessibleProperty($this->instance, 'synchronous', $synchronous);
+        $this->instance = $this->getMock(
+                'oat\flysystem\Adapter\LocalCacheAdapter' , 
+                ['copyStream'  , '__destruct'],
+                [],
+                '',
+                false
+                );
         
-        $this->assertEquals($expected , $this->instance->readStream($path));
-        $this->assertSame($expectedSave , $this->getInaccessibleProperty($this->instance, 'deferedSave'));
-        $this->setInaccessibleProperty($this->instance, 'deferedSave' , []);
+        $this->setInaccessibleProperty($this->instance, 'remoteStorage', $remoteMock);
+        $this->setInaccessibleProperty($this->instance, 'localStorage' , $localMock);
+        $this->setInaccessibleProperty($this->instance, 'synchronous'  , false);
+        
+        $this->instance
+                ->expects($this->once())
+                ->method('copyStream')
+                ->willReturn($localResource);
+        
+        $this->assertSame( $returnRemote , $this->instance->readStream($fixturepath));
+        $this->assertTrue(in_array($expected,  $this->getInaccessibleProperty($this->instance, 'deferedSave')));
     }
     
     public function testListContents() {
@@ -334,11 +411,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $file = tmpfile();
         $path = 'test1.txt';
         
-        $returnLocal = [
-            'path'   => $path,
-            'stream' => $file,
-            'local'
-        ];
+        $copy = tmpfile();
         
         $returnDist = [
             'path'   => $path,
@@ -346,17 +419,27 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             'remote'
         ];
         
+        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
+        
+        
         $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
         $remoteProphet->writeStream($path , $file , $config)->willReturn($returnDist);
-        $localProphet->writeStream($path , $file , $config)->willReturn($returnLocal);
         
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
+        $this->instance = $this->getMock(
+                LocalCacheAdapter::class , 
+                ['removeCache'],
+                [$remoteMock , $localMock],
+                '',
+                true
+                );
+
+        $this->instance->expects($this->once())->method('removeCache')->with($path)->willReturn($this->instance);
+
         $this->assertSame($returnDist , $this->instance->writeStream($path , $file , $config));
     }
     
@@ -368,17 +451,14 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
                     'mimetype'  => 'text/plain',
                 ];
         
-        $expected = 
-                [
-                    'mimetype'   => 'text/plain',
-                    'visibility' => 'public',
-                    'size'       => 180,
-                ];
+        $requiredConfig = [
+            'mimetype'   => 'getMimetype',
+            'size'       => 'getSize',
+            'timestamp'  => 'getTimestamp',
+        ];
         
         $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        
-        
         
         $remoteProphet->getVisibility('test.txt')->willReturn(['visibility' => 'public']);
         $remoteProphet->getSize('test.txt')->willReturn(['size'       => 180]);
@@ -386,12 +466,36 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
-        $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
+        $config     = $this->prophesize('League\Flysystem\Config')->reveal();
+        
+        $this->instance = $this->getMock(
+                LocalCacheAdapter::class , 
+                ['getPropertyFromRemote' , 'newConfig' ],
+                [$remoteMock , $localMock],
+                '',
+                true
+                );
+        
+        $this->instance
+                ->expects($this->once())
+                ->method('newConfig')
+                ->willReturn($config);
+        
+        $this->instance
+                ->expects($this->exactly(2))
+                ->method('getPropertyFromRemote')
+                ->withConsecutive(
+                        ['test.txt' , 'size' , 'getSize' ,  $config],
+                        ['test.txt' , 'timestamp' , 'getTimestamp' ,  $config]
+                        )
+                ->willReturn($config);
+        
+        $this->setInaccessibleProperty($this->instance, 'requiredConfig', $requiredConfig);
+        
         $config = $this->invokeProtectedMethod($this->instance, 'setConfigFromResult', [$fixtureResult]);
         $this->assertInstanceOf('League\Flysystem\Config' , $config);
-        $this->assertEquals($expected , $this->getInaccessibleProperty($config, 'settings'));
     }
-
+    
     public function testDestructor() {
         
         $pathContent = 'file1.txt';
@@ -442,6 +546,32 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $this->setInaccessibleProperty($this->instance, 'deferedSave' , $fixtureDeferedSave);
         
         $this->instance->__destruct();
+    }
+    
+    public function testCopyStream() {
+        
+        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+
+        $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
+        
+        $content = 'test ' . time() . ' ' . rand(10000000 , 99999999);
+        $origialStream = tmpfile();
+        fwrite($origialStream, $content);
+        
+        $this->assertSame($content, stream_get_contents($this->invokeProtectedMethod($this->instance, 'copyStream', [$origialStream])));
+        
+    }
+    
+    public function testNewConfig() {
+        
+        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+
+        $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
+        
+        $this->assertInstanceOf(\League\Flysystem\Config::class, $this->invokeProtectedMethod($this->instance, 'newConfig'));
+        
     }
 
     public function tearDown()

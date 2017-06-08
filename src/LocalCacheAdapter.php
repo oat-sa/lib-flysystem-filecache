@@ -59,7 +59,11 @@ class LocalCacheAdapter extends AbstractAdapter
     protected $requiredConfig = [
         'mimetype'   => 'getMimetype',
         'size'       => 'getSize',
-        'visibility' => 'getVisibility',
+        'timestamp'  => 'getTimestamp',
+        'basename'   => null,
+        'extension'  => null,
+        'filename'   => null,
+        'type'       => null,
     ];
 
 
@@ -111,6 +115,7 @@ class LocalCacheAdapter extends AbstractAdapter
     /**
      * change auto save value
      * @param boolean $synchronous
+     * @return $this
      */
     public function setSynchronous($synchronous) {
         $this->synchronous = boolval($synchronous);
@@ -170,14 +175,13 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         $result = $this->remoteStorage->readStream($path);
         if($result !== false ) { 
+            $localResource = $this->copyStream($result['stream']);
             if($this->synchronous) {
-                $resource = $result['stream'];
                 $config = $this->setConfigFromResult($result);
-                $result = $this->localStorage->writeStream($path , $resource , $config);
-                fclose($resource);
+                $this->localStorage->writeStream($path , $localResource , $config);
                 $result = $this->localStorage->readStream($path);
             } elseif($result !== false) {
-                $this->deferedSave[] = $result;
+                $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
             }
         }
         return $result;
@@ -257,6 +261,18 @@ class LocalCacheAdapter extends AbstractAdapter
     }
 
     /**
+     * delete local file
+     * @param $path
+     * @return $this
+     */
+    protected function removeCache($path) {
+        if($this->localStorage->has($path)) {
+            $this->localStorage->delete($path);
+        }
+        return $this;
+    }
+
+    /**
      * Write a new file.
      *
      * @param string $path
@@ -267,7 +283,9 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function write($path, $contents, Config $config)
     {
-        return $this->callOnBoth('write' , [$path, $contents, $config]);
+        $result = $this->remoteStorage->write($path, $contents, $config);
+        $this->removeCache($path);
+        return $result;
     }
 
     /**
@@ -280,9 +298,10 @@ class LocalCacheAdapter extends AbstractAdapter
      * @return array|false false on failure file meta data on success
      */
     public function writeStream($path, $resource, Config $config)
-    {   
+    {
         $result = $this->remoteStorage->writeStream($path, $resource, $config);
-        $this->localStorage->writeStream($path, $this->initStream($resource), $config);
+        $this->removeCache($path);
+        $result['stream'] = $resource;
         return $result;
     }
 
@@ -297,7 +316,9 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function update($path, $contents, Config $config)
     {
-        return $this->callOnBoth('update' , [$path, $contents, $config]);
+        $result = $this->remoteStorage->update($path, $contents, $config);
+        $this->removeCache($path);
+        return $result;
     }
 
     /**
@@ -311,7 +332,10 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function updateStream($path,  $resource, Config $config)
     {
-        return $this->callOnBoth('updateStream' , [$path, $resource, $config]);
+        $result = $this->remoteStorage->updateStream($path, $resource, $config);
+        $this->removeCache($path);
+        $result['stream'] = $resource;
+        return $result;
     }
 
     /**
@@ -413,9 +437,21 @@ class LocalCacheAdapter extends AbstractAdapter
         return call_user_func_array([$this->remoteStorage , $method] , $args);
 
     }
+    /**
+     * return a new stream from $resource
+     * @param resource $resource
+     * @return resource
+     */
+    protected function copyStream($resource) {
+        $this->initStream($resource);
+        $newResource = tmpfile();
+        stream_copy_to_stream($resource , $newResource);
+        $this->initStream($resource);
+        return $resource;
+    }
     
     protected function initStream($resource) {
-        rewind($resource);
+        @\rewind($resource);
         return $resource;
     }
 
@@ -440,17 +476,40 @@ class LocalCacheAdapter extends AbstractAdapter
     */
     protected function setConfigFromResult(array $result) { 
         
-        $config = new Config();
+        $config = $this->newConfig();
+        
         foreach ($this->requiredConfig as $param => $method) {
             if(array_key_exists($param, $result)) {
                 $config->set($param, $result[$param]);
             } else {
-                $params = $this->remoteStorage->$method($result['path']);
-                $config->set($param, $params[$param]);
+                $this->getPropertyFromRemote($result['path'], $param, $method, $config);
             }
         }
         return $config;
         
+    }
+    
+    protected function newConfig() {
+        return new Config();
+    }
+
+    /**
+     * return set property to config from remote file
+     * @param type $path
+     * @param type $property
+     * @param type $method
+     * @param Config $config
+     * @return boolean
+     */
+    protected function getPropertyFromRemote($path , $property , $method , Config $config) {
+        if(!empty($method)) {
+            $params = $this->remoteStorage->$method($path);
+            if(!empty($params)) {
+                $config->set($property, $params[$property]);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -460,7 +519,7 @@ class LocalCacheAdapter extends AbstractAdapter
         foreach ($this->deferedSave as $index => $write) {
             $config = $this->setConfigFromResult($write);
             if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
-                $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
+                $this->localStorage->writeStream($write['path'] , $write['stream'] , $config);
             } elseif(array_key_exists('contents', $write)) {
                 $this->localStorage->write($write['path'] , $write['contents'] , $config);
             }
