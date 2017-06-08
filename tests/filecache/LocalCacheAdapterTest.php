@@ -413,12 +413,6 @@ class LocalCacheAdapterTest extends PhpUnitTestHelper
         
         $copy = tmpfile();
         
-        $returnLocal = [
-            'path'   => $path,
-            'stream' => $file,
-            'local'
-        ];
-        
         $returnDist = [
             'path'   => $path,
             'stream' => $file,
@@ -426,38 +420,26 @@ class LocalCacheAdapterTest extends PhpUnitTestHelper
         ];
         
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
-        $configCopy = $this->prophesize('League\Flysystem\Config')->reveal();
         
         
         $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
 
         $remoteProphet->writeStream($path , $file , $config)->willReturn($returnDist);
-        $localProphet->writeStream($path , $copy , $configCopy)->willReturn($returnLocal);
         
         $localMock    = $localProphet->reveal();
         $remoteMock   = $remoteProphet->reveal();
         
         $this->instance = $this->getMock(
                 LocalCacheAdapter::class , 
-                ['copyStream' , 'setConfigFromResult'],
+                ['removeCache'],
                 [$remoteMock , $localMock],
                 '',
                 true
                 );
-        
-        $this->instance
-                ->expects($this->once())
-                ->method('copyStream')
-                ->with($file)
-                ->willReturn($copy);
-        
-        $this->instance
-                ->expects($this->once())
-                ->method('setConfigFromResult')
-                ->with($returnDist)
-                ->willReturn($configCopy);
-        
+
+        $this->instance->expects($this->once())->method('removeCache')->with($path)->willReturn($this->instance);
+
         $this->assertSame($returnDist , $this->instance->writeStream($path , $file , $config));
     }
     
