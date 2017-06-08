@@ -261,6 +261,18 @@ class LocalCacheAdapter extends AbstractAdapter
     }
 
     /**
+     * delete local file
+     * @param $path
+     * @return $this
+     */
+    protected function removeCache($path) {
+        if($this->localStorage->has($path)) {
+            $this->localStorage->delete($path);
+        }
+        return $this;
+    }
+
+    /**
      * Write a new file.
      *
      * @param string $path
@@ -272,11 +284,7 @@ class LocalCacheAdapter extends AbstractAdapter
     public function write($path, $contents, Config $config)
     {
         $result = $this->remoteStorage->write($path, $contents, $config);
-        if($this->synchronous) {
-            $this->localStorage->write($path, $contents, $this->setConfigFromResult($result));
-        } else {
-            $this->deferedSave[] = array_merge($result , ['path' => $path]);
-        }
+        $this->removeCache($path);
         return $result;
     }
 
@@ -290,14 +298,9 @@ class LocalCacheAdapter extends AbstractAdapter
      * @return array|false false on failure file meta data on success
      */
     public function writeStream($path, $resource, Config $config)
-    {   
+    {
         $result = $this->remoteStorage->writeStream($path, $resource, $config);
-        $localResource = $this->copyStream($resource);
-        if($this->synchronous) {
-            $this->localStorage->writeStream($path, $localResource, $this->setConfigFromResult($result));
-        } else {
-            $this->deferedSave[] = array_merge($result , ['path' => $path , 'stream' => $localResource]);
-        }
+        $this->removeCache($path);
         $result['stream'] = $resource;
         return $result;
     }
@@ -313,7 +316,9 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function update($path, $contents, Config $config)
     {
-        return $this->callOnBoth('update' , [$path, $contents, $config]);
+        $result = $this->remoteStorage->update($path, $contents, $config);
+        $this->removeCache($path);
+        return $result;
     }
 
     /**
@@ -327,7 +332,10 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function updateStream($path,  $resource, Config $config)
     {
-        return $this->callOnBoth('updateStream' , [$path, $resource, $config]);
+        $result = $this->remoteStorage->updateStream($path, $resource, $config);
+        $this->removeCache($path);
+        $result['stream'] = $resource;
+        return $result;
     }
 
     /**
