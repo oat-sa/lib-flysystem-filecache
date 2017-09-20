@@ -243,6 +243,15 @@ class LocalCacheAdapter extends AbstractAdapter
         return $contentList;
     }
     
+    /**
+     * Get List Contents Expected Cache Path
+     * 
+     * Provides the final path where to find cached data about a given listContents call.
+     * 
+     * @param string $directory
+     * @param boolean $recursive
+     * @return string
+     */
     protected function getListContentsCacheExpectedPath($directory, $recursive)
     {
         $key = md5($this->localStorage->getPathPrefix() . $directory . strval($recursive));
