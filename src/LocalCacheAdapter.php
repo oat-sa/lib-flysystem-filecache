@@ -14,7 +14,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2016 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2016-2017 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  *
  */
 namespace oat\flysystem\Adapter;
@@ -61,6 +61,12 @@ class LocalCacheAdapter extends AbstractAdapter
         'size'       => 'getSize',
         'visibility' => 'getVisibility',
     ];
+    
+    /**
+     * Whether or not caching results of method listContents.
+     * @var array
+     */
+    protected $cacheListContents = false;
 
 
     /**
@@ -115,6 +121,24 @@ class LocalCacheAdapter extends AbstractAdapter
     public function setSynchronous($synchronous) {
         $this->synchronous = boolval($synchronous);
         return $this;
+    }
+    
+    /**
+     * return cacheListContents value
+     * @return boolean
+     */
+    public function getCacheListContents()
+    {
+        return $this->cacheListContents;
+    }
+    
+    /**
+     * change cacheListContents value
+     * @param boolean $cacheListContents
+     */
+    public function setCacheListContents($cacheListContents)
+    {
+        $this->cacheListContents = $cacheListContents;
     }
 
     /**
@@ -193,7 +217,31 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function listContents($directory = '', $recursive = false)
     {
-        return $this->remoteStorage->listContents($directory , $recursive);
+        $contentList = [];
+        
+        if ($this->getCacheListContents() === false) {
+            // No caching for listContents method calls.
+            $contentList = $this->remoteStorage->listContents($directory , $recursive);
+        } else {
+            // Caching enabled for listContents method calls.
+            $key = md5($this->localStorage->getPathPrefix() . $directory . strval($recursive));
+            $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
+            
+            if ($this->localStorage->has($expectedPath) && ($data = $this->localStorage->read($expectedPath)) !== false) {
+                // In cache.
+                $contentList = json_decode($data['contents'], true);
+            } else {
+                // Not in cache or could not be read.
+                $contentList = $this->remoteStorage->listContents($directory , $recursive);
+                $this->localStorage->write(
+                    $expectedPath,
+                    json_encode($contentList),
+                    new Config()
+                );
+            }
+        }
+        
+        return $contentList;
     }
 
     /**
@@ -439,7 +487,6 @@ class LocalCacheAdapter extends AbstractAdapter
     * @return Config
     */
     protected function setConfigFromResult(array $result) { 
-        
         $config = new Config();
         foreach ($this->requiredConfig as $param => $method) {
             if(array_key_exists($param, $result)) {
