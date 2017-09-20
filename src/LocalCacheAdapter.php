@@ -224,8 +224,7 @@ class LocalCacheAdapter extends AbstractAdapter
             $contentList = $this->remoteStorage->listContents($directory , $recursive);
         } else {
             // Caching enabled for listContents method calls.
-            $key = md5($this->localStorage->getPathPrefix() . $directory . strval($recursive));
-            $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
+            $expectedPath = $this->getListContentsCacheExpectedPath($directory, $recursive);
             
             if ($this->localStorage->has($expectedPath) && ($data = $this->localStorage->read($expectedPath)) !== false) {
                 // In cache.
@@ -242,6 +241,20 @@ class LocalCacheAdapter extends AbstractAdapter
         }
         
         return $contentList;
+    }
+    
+    protected function getListContentsCacheExpectedPath($directory, $recursive)
+    {
+        $key = md5($this->localStorage->getPathPrefix() . $directory . strval($recursive));
+        
+        // Add some directory levels to not overload a single filesystem level.
+        for ($i = 1; $i < 6; $i += 2) {
+            $key = substr_replace($key, '/', $i, 0);
+        }
+        
+        $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
+        
+        return $expectedPath;
     }
 
     /**
