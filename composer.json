@@ -34,7 +34,7 @@
 		"forum" : "http://forum.taotesting.com",
 		"issues" : "http://forge.taotesting.com"
 	},
-	"license" : "GPL-2.0",
+	"license" : "GPL-2.0-only",
 	"keywords" : [
 		"flysystem",
 		"oat",
