@@ -68,6 +68,12 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     protected $cacheListContents = false;
 
+    /**
+     * Whether or not caching results of method has when directories are involved.
+     * @var bool
+     */
+    protected $cacheHasDirectory = false;
+
 
     /**
      * array to store local file to write on destructor
@@ -142,6 +148,24 @@ class LocalCacheAdapter extends AbstractAdapter
     }
 
     /**
+     * change chacheHasDirectory value
+     * @param $cacheHasDirectory
+     */
+    public function setCacheHasDirectory($cacheHasDirectory)
+    {
+        $this->cacheHasDirectory = $cacheHasDirectory;
+    }
+
+    /**
+     * return cacheHasDirectory value
+     * @return bool
+     */
+    public function getCacheHasDirectory()
+    {
+        return $this->cacheHasDirectory;
+    }
+
+    /**
      * Check whether a file exists.
      *
      * @param string $path
@@ -150,7 +174,32 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function has($path)
     {
-        return $this->callWithFallback('has' , [$path]);
+        if ($this->getCacheHasDirectory() === true && $this->isPathDir($path)) {
+            $cachePath = $this->getHasDirectoryCacheExpectedPath($path);
+
+            if ($this->localStorage->has($cachePath) && ($data = $this->localStorage->read($cachePath)) !== false) {
+                // In cache, let's decode data.
+                return json_decode($data['contents']);
+            } else {
+                // Not in cache, cache it!
+                $hasVal = $this->callWithFallback('has' , [$path]);
+
+                $this->localStorage->write(
+                    $cachePath,
+                    json_encode($hasVal),
+                    new Config()
+                );
+
+                return $hasVal;
+            }
+        } else {
+            return $this->callWithFallback('has' , [$path]);
+        }
+    }
+
+    private function isPathDir($path)
+    {
+        return preg_match('/.+\..+$/', $path) === 0;
     }
 
     /**
@@ -254,16 +303,30 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     protected function getListContentsCacheExpectedPath($directory, $recursive)
     {
-        $key = md5($this->localStorage->getPathPrefix() . $directory . strval($recursive));
+        $key = $this->buildCacheKey($this->localStorage->getPathPrefix() . $directory . strval($recursive));
+        $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
         
+        return $expectedPath;
+    }
+
+    protected function getHasDirectoryCacheExpectedPath($path)
+    {
+        $key = $this->buildCacheKey($this->localStorage->getPathPrefix() . $path);
+        $expectedPath = ".oat-lib-flysystem-cache/has-directory-cache/${key}.json";
+
+        return $expectedPath;
+    }
+
+    private function buildCacheKey($origin)
+    {
+        $key = md5($origin);
+
         // Add some directory levels to not overload a single filesystem level.
         for ($i = 1; $i < 6; $i += 2) {
             $key = substr_replace($key, '/', $i, 0);
         }
-        
-        $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
-        
-        return $expectedPath;
+
+        return $key;
     }
 
     /**
