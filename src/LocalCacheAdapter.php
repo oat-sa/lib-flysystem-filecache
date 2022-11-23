@@ -18,8 +18,10 @@
  *
  */
 namespace oat\flysystem\Adapter;
-use League\Flysystem\Adapter\AbstractAdapter;
+
+use League\Flysystem\FilesystemOperator;
 use League\Flysystem\Config;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 
 /**
  * Class LocalCacheAdapter
@@ -28,17 +30,17 @@ use League\Flysystem\Config;
  *
  * @package oat\flysystem\Adapter
  */
-class LocalCacheAdapter extends AbstractAdapter
+class LocalCacheAdapter extends LocalFilesystemAdapter
 {
     /**
      * remote flysystem adapter
-     * @var AbstractAdapter
+     * @var FilesystemOperator
      */
     protected $remoteStorage;
 
     /**
      * local flysystem adapter
-     * @var AbstractAdapter
+     * @var FilesystemOperator
      */
     protected $localStorage;
     
@@ -82,13 +84,13 @@ class LocalCacheAdapter extends AbstractAdapter
     protected $deferedSave = [];   
     /**
      * DualStorageAdapter constructor.
-     * @param AbstractAdapter $remoteStorage
-     * @param AbstractAdapter $localStorage
+     * @param FilesystemOperator $remoteStorage
+     * @param FilesystemOperator $localStorage
      * @param boolean $synchronous true if local cache must to be write immediatly
      */
     public function __construct(
-            AbstractAdapter $remoteStorage ,
-            AbstractAdapter $localStorage, 
+            FilesystemOperator $remoteStorage ,
+            FilesystemOperator $localStorage, 
             $synchronous = true)
     {
         $this->remoteStorage = $remoteStorage;
@@ -98,7 +100,7 @@ class LocalCacheAdapter extends AbstractAdapter
     
     /**
      * return remote storage adapter
-     * @return AbstractAdapter
+     * @return FilesystemOperator
      */
     public function getRemoteStorage() {
         return $this->remoteStorage;
@@ -106,7 +108,7 @@ class LocalCacheAdapter extends AbstractAdapter
     
     /**
      * return local storage adapter
-     * @return AbstractAdapter
+     * @return FilesystemOperator
      */
     public function getLocalStorage() {
         return $this->localStorage;
@@ -430,7 +432,7 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function update($path, $contents, Config $config)
     {
-        return $this->callOnBoth('update' , [$path, $contents, $config]);
+        return $this->callOnBoth('write' , [$path, $contents, $config]);
     }
 
     /**
@@ -444,7 +446,7 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     public function updateStream($path,  $resource, Config $config)
     {
-        return $this->callOnBoth('updateStream' , [$path, $resource, $config]);
+        return $this->callOnBoth('write' , [$path, $resource, $config]);
     }
 
     /**
