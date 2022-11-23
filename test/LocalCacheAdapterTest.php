@@ -21,8 +21,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
 
     public function testConstruct() {
 
-        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
         
         $synchronous   = true;
         
@@ -59,13 +59,13 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      */
     public function testCallWithFallback($method , $args , $localResult , $remoteResult) {
 
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $localProphet->$method()->withArguments($args)->willReturn($localResult);
         $localMock    = $localProphet->reveal();
 
         $expected     = $localResult;
 
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         if($localResult === false) {
             $remoteProphet->$method()->withArguments($args)->willReturn($remoteResult);
             $expected = $remoteResult;
@@ -79,8 +79,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
     }
     
     public function testGetters() {
-        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
         $this->instance = new LocalCacheAdapter($remoteMock , $localMock);
         
@@ -106,8 +106,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      */
     public function testSetGetSynchronous($value , $expected) {
         
-        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
         $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
         
@@ -138,11 +138,11 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      * @param boolean $remoteResult
      */
     public function testCallOnBoth($method , $args , $localResult , $remoteResult) {
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $localProphet->$method()->withArguments($args)->willReturn($localResult);
         $localMock    = $localProphet->reveal();
 
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
 
         $remoteProphet->$method()->withArguments($args)->willReturn($remoteResult);
         $expected = $remoteResult;
@@ -177,8 +177,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      * @param mixed $expected
      */
     public function testRead($path , $localResult , $remoteResult ,$synchronous , $expected) {
-        $localProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config        = $this->prophesize('League\Flysystem\Config')->reveal();
         
         $this->instance = $this->getMock(
@@ -248,8 +248,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
      * @param mixed $expected
      */
     public function testReadStream($path , $localResult , $remoteResult, $synchronous , $expected) {
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
         
         $this->instance = $this->getMock(
@@ -303,8 +303,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
                     'test3.txt',
                 ];
                 
-        $localProphet   = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet   = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
         
         $localMock      = $localProphet->reveal();
@@ -317,8 +317,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
     
     public function testInitStream() {
         
-        $remoteMock = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
-        $localMock  = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter')->reveal();
+        $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
+        $localMock  = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
         $this->instance = new LocalCacheAdapter($remoteMock , $localMock );
         
@@ -346,8 +346,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             'remote'
         ];
         
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
 
         $remoteProphet->writeStream($path , $file , $config)->willReturn($returnDist);
@@ -375,8 +375,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
                     'size'       => 180,
                 ];
         
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         
         
         
@@ -414,8 +414,8 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
                     ],
                 ];
         
-        $localProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
-        $remoteProphet = $this->prophesize('League\Flysystem\Adapter\AbstractAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         
         $config     = $this->prophesize('League\Flysystem\Config')->reveal();
         
