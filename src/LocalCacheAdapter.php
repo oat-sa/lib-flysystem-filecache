@@ -446,7 +446,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
      */
     public function updateStream($path,  $resource, Config $config)
     {
-        return $this->callOnBoth('write' , [$path, $resource, $config]);
+        return $this->callOnBoth('writeStream' , [$path, $resource, $config]);
     }
 
     /**
