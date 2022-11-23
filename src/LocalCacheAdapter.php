@@ -284,9 +284,10 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
             // Caching enabled for listContents method calls.
             $expectedPath = $this->getListContentsCacheExpectedPath($directory, $recursive);
 
-            if ($this->localStorage->has($expectedPath) && ($data = $this->localStorage->read(
-                    $expectedPath
-                )) !== false) {
+            if (
+                $this->localStorage->has($expectedPath)
+                && ($data = $this->localStorage->read($expectedPath)) !== false
+            ) {
                 // In cache.
                 $contentList = json_decode($data['contents'], true);
             } else {
