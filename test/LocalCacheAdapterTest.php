@@ -10,9 +10,9 @@ namespace oat\libFlysystemFilecache\test;
 
 
 use oat\flysystem\Adapter\LocalCacheAdapter;
-use oat\tao\test\TaoPhpUnitTestRunner;
+use PHPUnit\Framework\TestCase;
 
-class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
+class LocalCacheAdapterTest extends TestCase
 {
     /**
      * @var LocalCacheAdapter
@@ -229,12 +229,9 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = $this->getMock(
+        $this->instance = $this->createPartialMock(
             'oat\flysystem\Adapter\LocalCacheAdapter',
-            ['setConfigFromResult'],
-            [],
-            '',
-            false
+            ['setConfigFromResult']
         );
 
 
@@ -322,12 +319,9 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = $this->getMock(
+        $this->instance = $this->createPartialMock(
             'oat\flysystem\Adapter\LocalCacheAdapter',
-            ['setConfigFromResult'],
-            [],
-            '',
-            false
+            ['setConfigFromResult']
         );
 
         $localProphet->has($path)->willReturn($localResult);
@@ -491,16 +485,13 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
 
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $this->instance = $this->getMock(
+        $this->instance = $this->createPartialMock(
             'oat\flysystem\Adapter\LocalCacheAdapter',
-            ['setConfigFromResult'],
-            [],
-            '',
-            false
+            ['setConfigFromResult']
         );
 
-        $localProphet->write($pathContent, $contents, $config)->willReturn(true);
-        $localProphet->writeStream($pathStream, $stream, $config)->willReturn(true);
+        $localProphet->write($pathContent, $contents, $config);
+        $localProphet->writeStream($pathStream, $stream, $config);
 
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();
@@ -519,8 +510,26 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         $this->instance->__destruct();
     }
 
-    public function tearDown()
+    protected function tearDown(): void
     {
         $this->instance = null;
+    }
+
+    protected function getInaccessibleProperty($object, $propertyName)
+    {
+        $property = new \ReflectionProperty(get_class($object), $propertyName);
+        $property->setAccessible(true);
+        $value = $property->getValue($object);
+        $property->setAccessible(false);
+        return $value;
+    }
+
+    protected function setInaccessibleProperty($object, $propertyName, $value)
+    {
+        $property = new \ReflectionProperty(get_class($object), $propertyName);
+        $property->setAccessible(true);
+        $property->setValue($object, $value);
+        $property->setAccessible(false);
+        return $this;
     }
 }

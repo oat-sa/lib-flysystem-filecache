@@ -56,9 +56,10 @@
     "league/flysystem-memory": "^2.0 || ^3.0"
   },
   "require-dev": {
+    "mikey179/vfsstream": "1.4.0",
+    "phpspec/prophecy": "~1",
     "phpunit/phpunit": "~9|~7",
-    "sebastian/global-state": "^5.0.5",
-    "mikey179/vfsstream": "1.4.0"
+    "sebastian/global-state": "^5.0.5"
   },
   "minimum-stability": "dev",
   "autoload": {
