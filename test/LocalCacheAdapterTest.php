@@ -464,8 +464,13 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
 
 
-        $remoteProphet->getVisibility('test.txt')->willReturn(['visibility' => 'public']);
-        $remoteProphet->getSize('test.txt')->willReturn(['size' => 180]);
+        $mockFileAttr = $this->createMock(FileAttributes::class);
+        $mockFileAttr->method('visibility')->willReturn(true);
+        $mockFileAttr->method('fileSize')->willReturn(180);
+
+
+        $remoteProphet->visibility('test.txt')->willReturn($mockFileAttr);
+        $remoteProphet->fileSize('test.txt')->willReturn($mockFileAttr);
 
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();

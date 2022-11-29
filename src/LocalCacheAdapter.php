@@ -186,7 +186,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
         if ($this->getCacheHasDirectory() === true && $this->isPathDir($path)) {
             $cachePath = $this->getHasDirectoryCacheExpectedPath($path);
 
-            if ($this->localStorage->has($cachePath) && ($data = $this->localStorage->read($cachePath)) !== false) {
+            if ($this->localStorage->fileExists($cachePath) && ($data = $this->localStorage->read($cachePath)) !== false) {
                 // In cache, let's decode data.
                 return json_decode($data['contents']);
             } else {
@@ -220,7 +220,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
      */
     public function read($path): string
     {
-        if (($result = $this->localStorage->has($path)) !== false) {
+        if (($result = $this->localStorage->fileExists($path)) !== false) {
             return $this->localStorage->read($path);
         }
         $result = $this->remoteStorage->read($path);
@@ -244,7 +244,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
      */
     public function readStream($path)
     {
-        if (($result = $this->localStorage->has($path)) !== false) {
+        if (($result = $this->localStorage->fileExists($path)) !== false) {
             $result = $this->localStorage->readStream($path);
             if (is_resource($result['stream'])) {
                 return $result;
@@ -285,7 +285,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
             $expectedPath = $this->getListContentsCacheExpectedPath($directory, $recursive);
 
             if (
-                $this->localStorage->has($expectedPath)
+                $this->localStorage->fileExists($expectedPath)
                 && ($data = $this->localStorage->read($expectedPath)) !== false
             ) {
                 // In cache.
@@ -406,7 +406,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
      */
     public function getVisibility($path)
     {
-        return $this->callWithFallback('getVisibility', [$path]);
+        return $this->callWithFallback('visibility', [$path]);
     }
 
     /**
