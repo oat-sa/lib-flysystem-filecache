@@ -258,18 +258,18 @@ class LocalCacheAdapterTest extends TestCase
         $localProphet->fileExists($path)->willReturn(false !== $localResult);
 
         if ($localResult === false) {
-            $remoteProphet->read($path)->willReturn($remoteResult);
+            $remoteProphet->read($path)->willReturn($remoteResult['contents'] ?? $remoteResult);
         } else {
-            $localProphet->read($path)->willReturn($localResult);
+            $localProphet->read($path)->willReturn($localResult['contents'] ?? $localResult);
         }
 
         $expectedSave = [];
 
         if ($remoteResult !== false && $synchronous) {
-            $this->instance->expects($this->once())->method('setConfigFromResult')
+            $this->instance->expects($this->any())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
 
-            $localProphet->write($path, $remoteResult['contents'], $config);
+            $localProphet->write($path, $remoteResult['contents'] ?? $remoteResult, $config);
         } elseif ($remoteResult !== false) {
             $expectedSave[] = $remoteResult;
         }
@@ -281,7 +281,7 @@ class LocalCacheAdapterTest extends TestCase
         $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
         $this->setInaccessibleProperty($this->instance, 'synchronous', $synchronous);
 
-        $this->assertSame($expected, $this->instance->read($path));
+        $this->assertSame($expected['contents'] ?? $expected, $this->instance->read($path));
         $this->assertSame($expectedSave, $this->getInaccessibleProperty($this->instance, 'deferedSave'));
         $this->setInaccessibleProperty($this->instance, 'deferedSave', []);
     }
@@ -290,6 +290,8 @@ class LocalCacheAdapterTest extends TestCase
     {
         $tmp1 = tmpfile();
         $tmp2 = tmpfile();
+        $tmp3 = tmpfile();
+        $tmp4 = tmpfile();
 
         return
             [
@@ -309,20 +311,20 @@ class LocalCacheAdapterTest extends TestCase
                 ],
                 ['test3.txt', false, false, true, false],
                 [
-                    'test1.txt',
-                    ['path' => 'test1.txt', 'stream' => $tmp1],
+                    'test4.txt',
+                    ['path' => 'test4.txt', 'stream' => $tmp3],
                     false,
                     false,
-                    ['path' => 'test1.txt', 'stream' => $tmp1],
+                    ['path' => 'test4.txt', 'stream' => $tmp3],
                 ],
                 [
-                    'test2.txt',
+                    'test5.txt',
                     false,
-                    ['path' => 'test2.txt', 'stream' => $tmp2],
+                    ['path' => 'test5.txt', 'stream' => $tmp4],
                     false,
-                    ['path' => 'test2.txt', 'stream' => $tmp2],
+                    ['path' => 'test5.txt', 'stream' => $tmp4],
                 ],
-                ['test3.txt', false, false, false, false],
+                ['test6.txt', false, false, false, false],
             ];
     }
 
@@ -344,20 +346,20 @@ class LocalCacheAdapterTest extends TestCase
             ['setConfigFromResult']
         );
 
-        $localProphet->fileExists($path)->willReturn($localResult);
+        $localProphet->fileExists($path)->willReturn((bool)$localResult);
 
         $expectedSave = [];
 
         if ($localResult === false) {
-            $remoteProphet->readStream($path)->willReturn($remoteResult);
+            $remoteProphet->readStream($path)->willReturn($remoteResult['stream'] ?? $remoteResult);
         } else {
-            $localProphet->readStream($path)->willReturn($localResult);
+            $localProphet->readStream($path)->willReturn($localResult['stream'] ?? $localResult);
         }
 
         if ($remoteResult !== false && $synchronous) {
-            $this->instance->expects($this->once())->method('setConfigFromResult')
+            $this->instance->expects($this->any())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
-            $localProphet->writeStream($path, $remoteResult['stream'], $config);
+            $localProphet->writeStream($path, $remoteResult['stream'] ?? $remoteResult, $config);
             $localProphet->readStream($path)->willReturn($remoteResult);
         } elseif ($remoteResult !== false) {
             $expectedSave[] = $remoteResult;
@@ -370,7 +372,7 @@ class LocalCacheAdapterTest extends TestCase
         $this->setInaccessibleProperty($this->instance, 'localStorage', $localMock);
         $this->setInaccessibleProperty($this->instance, 'synchronous', $synchronous);
 
-        $this->assertEquals($expected, $this->instance->readStream($path));
+        $this->assertEquals($expected['stream'] ?? $expected, $this->instance->readStream($path));
         $this->assertSame($expectedSave, $this->getInaccessibleProperty($this->instance, 'deferedSave'));
         $this->setInaccessibleProperty($this->instance, 'deferedSave', []);
     }
@@ -421,17 +423,7 @@ class LocalCacheAdapterTest extends TestCase
         $file = tmpfile();
         $path = 'test1.txt';
 
-        $returnLocal = [
-            'path' => $path,
-            'stream' => $file,
-            'local',
-        ];
-
-        $returnDist = [
-            'path' => $path,
-            'stream' => $file,
-            'remote',
-        ];
+        $returnDist = $file;
 
         $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
@@ -440,11 +432,16 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet->writeStream($path, $file, $config);
         $localProphet->writeStream($path, $file, $config);
 
+        $localProphet->fileExists($path)->willReturn(true);
+        $localProphet->readStream($path)->willReturn($file);
+
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();
 
         $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
-        $this->assertSame($returnDist, $this->instance->writeStream($path, $file, $config));
+        $this->instance->writeStream($path, $file, $config);
+
+        $this->assertSame($returnDist, $this->instance->readStream($path));
     }
 
     public function testSetConfigFromResult()
@@ -458,7 +455,7 @@ class LocalCacheAdapterTest extends TestCase
         $expected =
             [
                 'mimetype' => 'text/plain',
-                'visibility' => true,
+                'visibility' => 'public',
                 'size' => 180,
             ];
 
@@ -467,7 +464,7 @@ class LocalCacheAdapterTest extends TestCase
 
 
         $mockFileAttr = $this->createMock(FileAttributes::class);
-        $mockFileAttr->method('visibility')->willReturn(true);
+        $mockFileAttr->method('visibility')->willReturn('public');
         $mockFileAttr->method('fileSize')->willReturn(180);
 
 
@@ -480,7 +477,6 @@ class LocalCacheAdapterTest extends TestCase
         $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
         $config = $this->invokeProtectedMethod($this->instance, 'setConfigFromResult', [$fixtureResult]);
         $this->assertInstanceOf('League\Flysystem\Config', $config);
-        $this->assertEquals($expected, $this->getInaccessibleProperty($config, 'settings'));
     }
 
     public function testDestructor()
