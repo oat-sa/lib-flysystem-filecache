@@ -350,7 +350,15 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
      */
     public function getMetadata($path)
     {
-        return $this->callWithFallback('getMetadata', [$path]);
+        $fileAttribute = $this->mimeType((string)$path);
+        return [
+            'type' => $fileAttribute->isFile() ? 'file' : 'dir',
+            'dirname' => dirname($fileAttribute->path()),
+            'path' => $fileAttribute->path(),
+            'timestamp' => $fileAttribute->lastModified(),
+            'mimetype' => $fileAttribute->mimeType(),
+            'size' => $fileAttribute->fileSize(),
+        ];
     }
 
     /**

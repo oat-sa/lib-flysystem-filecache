@@ -9,6 +9,7 @@
 namespace oat\libFlysystemFilecache\test;
 
 
+use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
 use oat\tao\test\TaoPhpUnitTestRunner;
 
@@ -130,25 +131,33 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
 
     public function callOnBothProvider()
     {
+        $fileAttributeLocalMock = $this->createMock(FileAttributes::class);
+        $fileAttributeLocalMock->method('lastModified')->willreturn(null);
+        $fileAttributeLocalMock->method('fileSize')->willreturn(null);
+
+        $fileAttributeRemoteMock = $this->createMock(FileAttributes::class);
+        $fileAttributeRemoteMock->method('lastModified')->willreturn(null);
+        $fileAttributeRemoteMock->method('fileSize')->willreturn(10);
+
         return
             [
                 [
-                    'has',
+                    'fileExists',
                     ['/path/test1'],
                     true,
                     false,
                 ],
                 [
-                    'getTimestamp',
+                    'lastModified',
                     ['/path/test1'],
-                    false,
-                    false,
+                    $fileAttributeLocalMock,
+                    $fileAttributeRemoteMock,
                 ],
                 [
-                    'getMetadata',
+                    'fileSize',
                     ['/path/test1'],
-                    false,
-                    true,
+                    $fileAttributeLocalMock,
+                    $fileAttributeRemoteMock,
                 ],
             ];
     }
@@ -238,7 +247,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
         );
 
 
-        $localProphet->has($path)->willReturn($localResult);
+        $localProphet->fileExists($path)->willReturn($localResult);
 
         if ($localResult === false) {
             $remoteProphet->read($path)->willReturn($remoteResult);
@@ -330,7 +339,7 @@ class LocalCacheAdapterTest extends TaoPhpUnitTestRunner
             false
         );
 
-        $localProphet->has($path)->willReturn($localResult);
+        $localProphet->fileExists($path)->willReturn($localResult);
 
         $expectedSave = [];
 
