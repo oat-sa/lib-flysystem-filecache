@@ -12,6 +12,7 @@ namespace oat\libFlysystemFilecache\test;
 use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class LocalCacheAdapterTest extends TestCase
 {
@@ -36,25 +37,33 @@ class LocalCacheAdapterTest extends TestCase
 
     public function callWithFallbackProvider()
     {
+        $fileAttributeLocalMock = $this->createMock(FileAttributes::class);
+        $fileAttributeLocalMock->method('lastModified')->willreturn(null);
+        $fileAttributeLocalMock->method('fileSize')->willreturn(null);
+
+        $fileAttributeRemoteMock = $this->createMock(FileAttributes::class);
+        $fileAttributeRemoteMock->method('lastModified')->willreturn(null);
+        $fileAttributeRemoteMock->method('fileSize')->willreturn(10);
+
         return
             [
                 [
-                    'has',
+                    'fileExists',
                     ['/path/test1'],
                     true,
                     false,
                 ],
                 [
-                    'getTimestamp',
+                    'lastModified',
                     ['/path/test1'],
-                    false,
-                    false,
+                    $fileAttributeLocalMock,
+                    $fileAttributeLocalMock,
                 ],
                 [
-                    'getMetadata',
+                    'fileSize',
                     ['/path/test1'],
-                    false,
-                    true,
+                    $fileAttributeLocalMock,
+                    $fileAttributeRemoteMock,
                 ],
             ];
     }
@@ -540,5 +549,14 @@ class LocalCacheAdapterTest extends TestCase
         $property->setValue($object, $value);
         $property->setAccessible(false);
         return $this;
+    }
+
+    protected function invokeProtectedMethod($obj, $method, $params)
+    {
+        $class = new ReflectionClass($obj);
+        $method = $class->getMethod($method);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($obj, $params);
     }
 }
