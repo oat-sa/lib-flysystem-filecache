@@ -13,9 +13,12 @@ use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Prophecy\PhpUnit\ProphecyTrait;
 
 class LocalCacheAdapterTest extends TestCase
 {
+    use ProphecyTrait;
+
     /**
      * @var LocalCacheAdapter
      */
@@ -214,7 +217,7 @@ class LocalCacheAdapterTest extends TestCase
                     true,
                     ['path' => 'test2.txt', 'contents' => 'test2'],
                 ],
-                ['test2.txt', false, false, true, false],
+                ['test2.txt', false, false, true, ''],
                 [
                     'test1.txt',
                     ['path' => 'test1.txt', 'contents' => 'test1'],
@@ -229,7 +232,7 @@ class LocalCacheAdapterTest extends TestCase
                     false,
                     ['path' => 'test2.txt', 'contents' => 'test2'],
                 ],
-                ['test2.txt', false, false, false, false],
+                ['test2.txt', false, false, false, ''],
             ];
     }
 
@@ -252,8 +255,7 @@ class LocalCacheAdapterTest extends TestCase
             ['setConfigFromResult']
         );
 
-
-        $localProphet->fileExists($path)->willReturn($localResult);
+        $localProphet->fileExists($path)->willReturn(false !== $localResult);
 
         if ($localResult === false) {
             $remoteProphet->read($path)->willReturn($remoteResult);
@@ -267,7 +269,7 @@ class LocalCacheAdapterTest extends TestCase
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
 
-            $localProphet->write($path, $remoteResult['contents'], $config)->willReturn($remoteResult);
+            $localProphet->write($path, $remoteResult['contents'], $config);
         } elseif ($remoteResult !== false) {
             $expectedSave[] = $remoteResult;
         }
@@ -355,7 +357,7 @@ class LocalCacheAdapterTest extends TestCase
         if ($remoteResult !== false && $synchronous) {
             $this->instance->expects($this->once())->method('setConfigFromResult')
                 ->with($remoteResult)->willReturn($config);
-            $localProphet->writeStream($path, $remoteResult['stream'], $config)->willReturn($remoteResult);
+            $localProphet->writeStream($path, $remoteResult['stream'], $config);
             $localProphet->readStream($path)->willReturn($remoteResult);
         } elseif ($remoteResult !== false) {
             $expectedSave[] = $remoteResult;
@@ -435,8 +437,8 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $remoteProphet->writeStream($path, $file, $config)->willReturn($returnDist);
-        $localProphet->writeStream($path, $file, $config)->willReturn($returnLocal);
+        $remoteProphet->writeStream($path, $file, $config);
+        $localProphet->writeStream($path, $file, $config);
 
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();
@@ -456,7 +458,7 @@ class LocalCacheAdapterTest extends TestCase
         $expected =
             [
                 'mimetype' => 'text/plain',
-                'visibility' => 'public',
+                'visibility' => true,
                 'size' => 180,
             ];
 
