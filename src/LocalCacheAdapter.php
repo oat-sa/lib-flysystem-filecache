@@ -413,10 +413,8 @@ class LocalCacheAdapter extends AbstractAdapter
      * @return array|false false on failure file meta data on success
      */
     public function writeStream($path, $resource, Config $config)
-    {   
-        $result = $this->remoteStorage->writeStream($path, $resource, $config);
-        $this->localStorage->writeStream($path, $this->initStream($resource), $config);
-        return $result;
+    {
+        return $this->write($path, stream_get_contents($resource), $config);
     }
 
     /**
