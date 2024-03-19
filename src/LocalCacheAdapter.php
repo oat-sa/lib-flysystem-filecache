@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,9 +18,12 @@
  * Copyright (c) 2016-2017 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  *
  */
+
 namespace oat\flysystem\Adapter;
-use League\Flysystem\Adapter\AbstractAdapter;
-use League\Flysystem\Config;
+
+use Oat\Filesystem\AdapterInterface;
+use Oat\Filesystem\ConfigInterface;
+use Oat\Filesystem\Config;
 
 /**
  * Class LocalCacheAdapter
@@ -28,20 +32,20 @@ use League\Flysystem\Config;
  *
  * @package oat\flysystem\Adapter
  */
-class LocalCacheAdapter extends AbstractAdapter
+class LocalCacheAdapter extends AdapterInterface
 {
     /**
      * remote flysystem adapter
-     * @var AbstractAdapter
+     * @var AdapterInterface
      */
     protected $remoteStorage;
 
     /**
      * local flysystem adapter
-     * @var AbstractAdapter
+     * @var AdapterInterface
      */
     protected $localStorage;
-    
+
     /**
      * true if local cache must to be write immediatly
      * if false, cache is writing on destructor
@@ -51,7 +55,7 @@ class LocalCacheAdapter extends AbstractAdapter
      * @var boolean 
      */
     protected $synchronous;
-    
+
     /**
      * list of required local config entry
      * @var array
@@ -61,7 +65,7 @@ class LocalCacheAdapter extends AbstractAdapter
         'size'       => 'getSize',
         'visibility' => 'getVisibility',
     ];
-    
+
     /**
      * Whether or not caching results of method listContents.
      * @var array
@@ -79,56 +83,60 @@ class LocalCacheAdapter extends AbstractAdapter
      * array to store local file to write on destructor
      * @var array
      */
-    protected $deferedSave = [];   
+    protected $deferedSave = [];
     /**
      * DualStorageAdapter constructor.
-     * @param AbstractAdapter $remoteStorage
-     * @param AbstractAdapter $localStorage
+     * @param AdapterInterface $remoteStorage
+     * @param AdapterInterface $localStorage
      * @param boolean $synchronous true if local cache must to be write immediatly
      */
     public function __construct(
-            AbstractAdapter $remoteStorage ,
-            AbstractAdapter $localStorage, 
-            $synchronous = true)
-    {
+        AdapterInterface $remoteStorage,
+        AdapterInterface $localStorage,
+        $synchronous = true
+    ) {
         $this->remoteStorage = $remoteStorage;
         $this->localStorage  = $localStorage;
         $this->synchronous      = boolval($synchronous);
     }
-    
+
     /**
      * return remote storage adapter
-     * @return AbstractAdapter
+     * @return AdapterInterface
      */
-    public function getRemoteStorage() {
+    public function getRemoteStorage()
+    {
         return $this->remoteStorage;
     }
-    
+
     /**
      * return local storage adapter
-     * @return AbstractAdapter
+     * @return AdapterInterface
      */
-    public function getLocalStorage() {
+    public function getLocalStorage()
+    {
         return $this->localStorage;
     }
-    
+
     /**
      * return autosave value
      * @return boolean
      */
-    public function getSynchronous() {
+    public function getSynchronous()
+    {
         return $this->synchronous;
     }
-    
+
     /**
      * change auto save value
      * @param boolean $synchronous
      */
-    public function setSynchronous($synchronous) {
+    public function setSynchronous($synchronous)
+    {
         $this->synchronous = boolval($synchronous);
         return $this;
     }
-    
+
     /**
      * return cacheListContents value
      * @return boolean
@@ -137,7 +145,7 @@ class LocalCacheAdapter extends AbstractAdapter
     {
         return $this->cacheListContents;
     }
-    
+
     /**
      * change cacheListContents value
      * @param boolean $cacheListContents
@@ -172,7 +180,7 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|bool|null
      */
-    public function has($path)
+    public function has($path): bool
     {
         if ($this->getCacheHasDirectory() === true && $this->isPathDir($path)) {
             $cachePath = $this->getHasDirectoryCacheExpectedPath($path);
@@ -182,7 +190,7 @@ class LocalCacheAdapter extends AbstractAdapter
                 return json_decode($data['contents']);
             } else {
                 // Not in cache, cache it!
-                $hasVal = $this->callWithFallback('has' , [$path]);
+                $hasVal = $this->callWithFallback('has', [$path]);
 
                 $this->localStorage->write(
                     $cachePath,
@@ -193,7 +201,7 @@ class LocalCacheAdapter extends AbstractAdapter
                 return $hasVal;
             }
         } else {
-            return $this->callWithFallback('has' , [$path]);
+            return $this->callWithFallback('has', [$path]);
         }
     }
 
@@ -209,17 +217,17 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function read($path)
+    public function read($path): array | false
     {
-        if(($result = $this->localStorage->has($path)) !== false) {
+        if (($result = $this->localStorage->has($path)) !== false) {
             return $this->localStorage->read($path);
         }
         $result = $this->remoteStorage->read($path);
-        if($result !== false) {
-            if($this->synchronous) {
+        if ($result !== false) {
+            if ($this->synchronous) {
                 $config = $this->setConfigFromResult($result);
-                $this->localStorage->write($path , $result['contents'] , $config);
-            } elseif($result !== false) {
+                $this->localStorage->write($path, $result['contents'], $config);
+            } elseif ($result !== false) {
                 $this->deferedSave[] = $result;
             }
         }
@@ -233,23 +241,23 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function readStream($path)
+    public function readStream($path): array
     {
-        if(($result = $this->localStorage->has($path)) !== false) {
+        if (($result = $this->localStorage->has($path)) !== false) {
             $result = $this->localStorage->readStream($path);
-            if(is_resource($result['stream'])) {
+            if (is_resource($result['stream'])) {
                 return $result;
             }
         }
         $result = $this->remoteStorage->readStream($path);
-        if($result !== false ) { 
-            if($this->synchronous) {
+        if ($result !== false) {
+            if ($this->synchronous) {
                 $resource = $result['stream'];
                 $config = $this->setConfigFromResult($result);
-                $result = $this->localStorage->writeStream($path , $resource , $config);
+                $result = $this->localStorage->writeStream($path, $resource, $config);
                 fclose($resource);
                 $result = $this->localStorage->readStream($path);
-            } elseif($result !== false) {
+            } elseif ($result !== false) {
                 $this->deferedSave[] = $result;
             }
         }
@@ -264,23 +272,23 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array
      */
-    public function listContents($directory = '', $recursive = false)
+    public function listContents($directory = '', $recursive = false): array
     {
         $contentList = [];
-        
+
         if ($this->getCacheListContents() === false) {
             // No caching for listContents method calls.
-            $contentList = $this->remoteStorage->listContents($directory , $recursive);
+            $contentList = $this->remoteStorage->listContents($directory, $recursive);
         } else {
             // Caching enabled for listContents method calls.
             $expectedPath = $this->getListContentsCacheExpectedPath($directory, $recursive);
-            
+
             if ($this->localStorage->has($expectedPath) && ($data = $this->localStorage->read($expectedPath)) !== false) {
                 // In cache.
                 $contentList = json_decode($data['contents'], true);
             } else {
                 // Not in cache or could not be read.
-                $contentList = $this->remoteStorage->listContents($directory , $recursive);
+                $contentList = $this->remoteStorage->listContents($directory, $recursive);
                 $this->localStorage->write(
                     $expectedPath,
                     json_encode($contentList),
@@ -288,10 +296,10 @@ class LocalCacheAdapter extends AbstractAdapter
                 );
             }
         }
-        
+
         return $contentList;
     }
-    
+
     /**
      * Get List Contents Expected Cache Path
      * 
@@ -305,7 +313,7 @@ class LocalCacheAdapter extends AbstractAdapter
     {
         $key = $this->buildCacheKey($this->localStorage->getPathPrefix() . $directory . strval($recursive));
         $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
-        
+
         return $expectedPath;
     }
 
@@ -336,9 +344,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getMetadata($path)
+    public function getMetadata($path): array
     {
-        return $this->callWithFallback('getMetadata' , [$path]);
+        return $this->callWithFallback('getMetadata', [$path]);
     }
 
     /**
@@ -348,9 +356,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getSize($path)
+    public function getSize($path): array
     {
-        return $this->callWithFallback('getSize' , [$path]);
+        return $this->callWithFallback('getSize', [$path]);
     }
 
     /**
@@ -360,9 +368,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getMimetype($path)
+    public function getMimetype($path): array
     {
-        return $this->callWithFallback('getMimetype' , [$path]);
+        return $this->callWithFallback('getMimetype', [$path]);
     }
 
     /**
@@ -372,9 +380,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getTimestamp($path)
+    public function getTimestamp($path): array
     {
-        return $this->callWithFallback('getTimestamp' , [$path]);
+        return $this->callWithFallback('getTimestamp', [$path]);
     }
 
     /**
@@ -384,9 +392,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false
      */
-    public function getVisibility($path)
+    public function getVisibility($path): array
     {
-        return $this->callWithFallback('getVisibility' , [$path]);
+        return $this->callWithFallback('getVisibility', [$path]);
     }
 
     /**
@@ -394,13 +402,13 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @param string $path
      * @param string $contents
-     * @param Config $config Config object
+     * @param ConfigInterface $config Config object
      *
      * @return array|false false on failure file meta data on success
      */
-    public function write($path, $contents, Config $config)
+    public function write($path, $contents, ConfigInterface $config): array | false
     {
-        return $this->callOnBoth('write' , [$path, $contents, $config]);
+        return $this->callOnBoth('write', [$path, $contents, $config]);
     }
 
     /**
@@ -408,11 +416,11 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @param string $path
      * @param resource $resource
-     * @param Config $config Config object
+     * @param ConfigInterface $config Config object
      *
      * @return array|false false on failure file meta data on success
      */
-    public function writeStream($path, $resource, Config $config)
+    public function writeStream($path, $resource, ConfigInterface $config): array | false
     {
         return $this->write($path, stream_get_contents($resource), $config);
     }
@@ -422,13 +430,13 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @param string $path
      * @param string $contents
-     * @param Config $config Config object
+     * @param ConfigInterface $config Config object
      *
      * @return array|false false on failure file meta data on success
      */
-    public function update($path, $contents, Config $config)
+    public function update($path, $contents, ConfigInterface $config): array | false
     {
-        return $this->callOnBoth('update' , [$path, $contents, $config]);
+        return $this->callOnBoth('update', [$path, $contents, $config]);
     }
 
     /**
@@ -436,13 +444,13 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @param string $path
      * @param resource $resource
-     * @param Config $config Config object
+     * @param ConfigInterface $config Config object
      *
      * @return array|false false on failure file meta data on success
      */
-    public function updateStream($path,  $resource, Config $config)
+    public function updateStream($path,  $resource, ConfigInterface $config): array | false
     {
-        return $this->callOnBoth('updateStream' , [$path, $resource, $config]);
+        return $this->callOnBoth('updateStream', [$path, $resource, $config]);
     }
 
     /**
@@ -453,9 +461,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return bool
      */
-    public function rename($path, $newpath)
+    public function rename($path, $newpath): bool
     {
-        return $this->callOnBoth('rename' , [$path, $newpath]);
+        return $this->callOnBoth('rename', [$path, $newpath]);
     }
 
     /**
@@ -466,9 +474,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return bool
      */
-    public function copy($path, $newpath)
+    public function copy($path, $newpath): bool
     {
-        return $this->callOnBoth('rename' , [$path, $newpath]);
+        return $this->callOnBoth('rename', [$path, $newpath]);
     }
 
     /**
@@ -478,9 +486,9 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return bool
      */
-    public function delete($path)
+    public function delete($path): bool
     {
-        return $this->callOnBoth('delete' , [$path]);
+        return $this->callOnBoth('delete', [$path]);
     }
 
     /**
@@ -490,22 +498,22 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return bool
      */
-    public function deleteDir($dirname)
+    public function deleteDir($dirname): bool
     {
-        return $this->callOnBoth('deleteDir' , [$dirname]);
+        return $this->callOnBoth('deleteDir', [$dirname]);
     }
 
     /**
      * Create a directory.
      *
      * @param string $dirname directory name
-     * @param Config $config
+     * @param ConfigInterface $config
      *
      * @return array|false
      */
-    public function createDir($dirname, Config $config)
+    public function createDir($dirname, ConfigInterface $config): array | false
     {
-        return $this->callOnBoth('createDir' , [$dirname , $config]);
+        return $this->callOnBoth('createDir', [$dirname, $config]);
     }
 
     /**
@@ -516,9 +524,14 @@ class LocalCacheAdapter extends AbstractAdapter
      *
      * @return array|false file meta data
      */
-    public function setVisibility($path, $visibility)
+    public function setVisibility($path, $visibility): array | false
     {
-        return $this->callOnBoth('setVisibility' , [$path, $visibility]);
+        return $this->callOnBoth('setVisibility', [$path, $visibility]);
+    }
+
+    public function getPathPrefix(): string
+    {
+        return $this->localStorage->getPathPrefix();
     }
 
     /**
@@ -532,20 +545,20 @@ class LocalCacheAdapter extends AbstractAdapter
      */
     protected function callWithFallback($method, array $args = [])
     {
- 
-        try  {
-            $result = call_user_func_array([$this->localStorage , $method] , $args);
+
+        try {
+            $result = call_user_func_array([$this->localStorage, $method], $args);
         } catch (\Exception $e) {
             $result = false;
         }
         if ($result !== false) {
             return $result;
         }
-        return call_user_func_array([$this->remoteStorage , $method] , $args);
-
+        return call_user_func_array([$this->remoteStorage, $method], $args);
     }
-    
-    protected function initStream($resource) {
+
+    protected function initStream($resource)
+    {
         rewind($resource);
         return $resource;
     }
@@ -556,23 +569,25 @@ class LocalCacheAdapter extends AbstractAdapter
      * @param $method
      * @param array $args
      * @return mixed
-    */
-    protected function callOnBoth($method, array $args = []) {
+     */
+    protected function callOnBoth($method, array $args = [])
+    {
 
-        call_user_func_array([$this->localStorage , $method] , $args);
-        return call_user_func_array([$this->remoteStorage , $method] , $args);
+        call_user_func_array([$this->localStorage, $method], $args);
+        return call_user_func_array([$this->remoteStorage, $method], $args);
     }
-    
+
     /**
-    * set local config from remote read Result or
-    * from file metadata has allback
-    * @param array $result
-    * @return Config
-    */
-    protected function setConfigFromResult(array $result) { 
+     * set local config from remote read Result or
+     * from file metadata has allback
+     * @param array $result
+     * @return Config
+     */
+    protected function setConfigFromResult(array $result)
+    {
         $config = new Config();
         foreach ($this->requiredConfig as $param => $method) {
-            if(array_key_exists($param, $result)) {
+            if (array_key_exists($param, $result)) {
                 $config->set($param, $result[$param]);
             } else {
                 $params = $this->remoteStorage->$method($result['path']);
@@ -580,19 +595,19 @@ class LocalCacheAdapter extends AbstractAdapter
             }
         }
         return $config;
-        
     }
 
     /**
-    * do defered write operations
-    */
-    public function __destruct() {
+     * do defered write operations
+     */
+    public function __destruct()
+    {
         foreach ($this->deferedSave as $index => $write) {
             $config = $this->setConfigFromResult($write);
-            if(array_key_exists('stream', $write) && is_resource($write['stream'])) {
-                $this->localStorage->writeStream($write['path'] , $this->initStream($write['stream']) , $config);
-            } elseif(array_key_exists('contents', $write)) {
-                $this->localStorage->write($write['path'] , $write['contents'] , $config);
+            if (array_key_exists('stream', $write) && is_resource($write['stream'])) {
+                $this->localStorage->writeStream($write['path'], $this->initStream($write['stream']), $config);
+            } elseif (array_key_exists('contents', $write)) {
+                $this->localStorage->write($write['path'], $write['contents'], $config);
             }
             unset($this->deferedSave[$index]);
         }
