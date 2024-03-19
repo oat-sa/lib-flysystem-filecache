@@ -32,7 +32,7 @@ use Oat\Filesystem\Config;
  *
  * @package oat\flysystem\Adapter
  */
-class LocalCacheAdapter extends AdapterInterface
+class LocalCacheAdapter implements AdapterInterface
 {
     /**
      * remote flysystem adapter
