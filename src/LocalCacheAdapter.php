@@ -20,6 +20,7 @@
 
 namespace oat\flysystem\Adapter;
 
+use League\Flysystem\FileAttributes;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\Config;
@@ -32,7 +33,7 @@ use League\Flysystem\Local\LocalFilesystemAdapter;
  *
  * @package oat\flysystem\Adapter
  */
-class LocalCacheAdapter extends LocalFilesystemAdapter
+class LocalCacheAdapter implements FilesystemAdapter
 {
     /**
      * remote flysystem adapter
@@ -174,35 +175,36 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
         return $this->cacheHasDirectory;
     }
 
+    public function fileExists(string $path): bool
+    {
+        return $this->callWithFallback('fileExists', [$path]);
+    }
+
     /**
-     * Check whether a file exists.
-     *
-     * @param string $path
-     *
-     * @return array|bool|null
+     * Check whether a directory exists.
      */
-    public function has($path)
+    public function directoryExists(string $path): bool
     {
         if ($this->getCacheHasDirectory() === true && $this->isPathDir($path)) {
             $cachePath = $this->getHasDirectoryCacheExpectedPath($path);
 
-            if ($this->localStorage->fileExists($cachePath) && ($data = $this->localStorage->read($cachePath)) !== false) {
+            if ($this->localStorage->directoryExists($cachePath) && ($data = $this->localStorage->read($cachePath)) !== false) {
                 // In cache, let's decode data.
                 return json_decode($data['contents']);
             } else {
                 // Not in cache, cache it!
-                $hasVal = $this->callWithFallback('has', [$path]);
+                $directoryExistsVal = $this->callWithFallback('directoryExists', [$path]);
 
                 $this->localStorage->write(
                     $cachePath,
-                    json_encode($hasVal),
+                    json_encode($directoryExistsVal),
                     new Config()
                 );
 
-                return $hasVal;
+                return $directoryExistsVal;
             }
         } else {
-            return $this->callWithFallback('has', [$path]);
+            return $this->callWithFallback('directoryExists', [$path]);
         }
     }
 
@@ -213,12 +215,8 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
 
     /**
      * Read a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
      */
-    public function read($path): string
+    public function read(string $path): string
     {
         if (($this->localStorage->fileExists($path)) !== false) {
             return $this->localStorage->read($path);
@@ -237,12 +235,8 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
 
     /**
      * Read a file as a stream.
-     *
-     * @param string $path
-     *
-     * @return array|false
      */
-    public function readStream($path)
+    public function readStream(string $path)
     {
         if ($this->localStorage->fileExists($path)) {
             $result = $this->localStorage->readStream($path);
@@ -267,22 +261,17 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
 
     /**
      * List contents of a directory.
-     *
-     * @param string $directory
-     * @param bool $recursive
-     *
-     * @return array
      */
-    public function listContents($directory = '', $recursive = false): iterable
+    public function listContents(string $path, bool $deep): iterable
     {
         $contentList = [];
 
         if ($this->getCacheListContents() === false) {
             // No caching for listContents method calls.
-            $contentList = $this->remoteStorage->listContents($directory, $recursive);
+            $contentList = $this->remoteStorage->listContents($path, $deep);
         } else {
             // Caching enabled for listContents method calls.
-            $expectedPath = $this->getListContentsCacheExpectedPath($directory, $recursive);
+            $expectedPath = $this->getListContentsCacheExpectedPath($path, $deep);
 
             if (
                 $this->localStorage->fileExists($expectedPath)
@@ -292,7 +281,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
                 $contentList = json_decode($data['contents'], true);
             } else {
                 // Not in cache or could not be read.
-                $contentList = $this->remoteStorage->listContents($directory, $recursive);
+                $contentList = $this->remoteStorage->listContents($path, $deep);
                 $this->localStorage->write(
                     $expectedPath,
                     json_encode($contentList),
@@ -342,151 +331,64 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
     }
 
     /**
-     * Get all the meta data of a file or directory.
-     *
-     * @param string $path
-     *
-     * @return array|false
+     * Get size of a file
      */
-    public function getMetadata($path)
+    public function fileSize(string $path): FileAttributes
     {
-        $fileAttribute = $this->mimeType((string)$path);
-        return [
-            'type' => $fileAttribute->isFile() ? 'file' : 'dir',
-            'dirname' => dirname($fileAttribute->path()),
-            'path' => $fileAttribute->path(),
-            'timestamp' => $fileAttribute->lastModified(),
-            'mimetype' => $fileAttribute->mimeType(),
-            'size' => $fileAttribute->fileSize(),
-        ];
-    }
-
-    /**
-     * Get all the meta data of a file or directory.
-     *
-     * @param string $path
-     *
-     * @return array|false
-     */
-    public function getSize($path)
-    {
-        return $this->callWithFallback('getSize', [$path]);
+        return $this->callWithFallback('fileSize', [$path]);
     }
 
     /**
      * Get the mimetype of a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
      */
-    public function getMimetype($path)
+    public function mimeType(string $path): FileAttributes
     {
-        return $this->callWithFallback('getMimetype', [$path]);
+        return $this->callWithFallback('mimeType', [$path]);
     }
 
     /**
      * Get the timestamp of a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
      */
-    public function getTimestamp($path)
+    public function lastModified(string $path): FileAttributes
     {
-        return $this->callWithFallback('getTimestamp', [$path]);
+        return $this->callWithFallback('lastModified', [$path]);
     }
 
     /**
      * Get the visibility of a file.
-     *
-     * @param string $path
-     *
-     * @return array|false
      */
-    public function getVisibility($path)
+    public function visibility(string $path): FileAttributes
     {
         return $this->callWithFallback('visibility', [$path]);
     }
 
     /**
-     * Write a new file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
+     * Write a new or existing file.
      */
-    public function write($path, $contents, Config $config): void
+    public function write(string $path, string $contents, Config $config): void
     {
         $this->callOnBoth('write', [$path, $contents, $config]);
     }
 
     /**
-     * Write a new file using a stream.
-     *
-     * @param string $path
-     * @param resource $resource
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
+     * Write a new or existing file using a stream.
      */
-    public function writeStream($path, $resource, Config $config): void
+    public function writeStream(string $path, $contents, Config $config): void
     {
-        $this->remoteStorage->writeStream($path, $resource, $config);
-        $this->localStorage->writeStream($path, $this->initStream($resource), $config);
+        $this->remoteStorage->writeStream($path, $contents, $config);
+        $this->localStorage->writeStream($path, $this->initStream($contents), $config);
     }
 
     /**
-     * Update a file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
+     * Move a file.
      */
-    public function update($path, $contents, Config $config)
+    public function move(string $source, string $destination, Config $config): void
     {
-        return $this->callOnBoth('write', [$path, $contents, $config]);
-    }
-
-    /**
-     * Update a file using a stream.
-     *
-     * @param string $path
-     * @param resource $resource
-     * @param Config $config Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function updateStream($path, $resource, Config $config)
-    {
-        return $this->callOnBoth('writeStream', [$path, $resource, $config]);
-    }
-
-    /**
-     * Rename a file.
-     *
-     * @param string $path
-     * @param string $newpath
-     *
-     * @return bool
-     */
-    public function rename($path, $newpath)
-    {
-        return $this->callOnBoth('rename', [$path, $newpath]);
+        $this->callOnBoth('move', [$source, $destination, $config]);
     }
 
     /**
      * Copy a file.
-     *
-     * @param string $source
-     * @param string $destination
-     * @param Config $config
-     *
-     * @return bool
      */
     public function copy(string $source, string $destination, Config $config): void
     {
@@ -495,50 +397,32 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
 
     /**
      * Delete a file.
-     *
-     * @param string $path
-     *
-     * @return bool
      */
-    public function delete($path): void
+    public function delete(string $path): void
     {
         $this->callOnBoth('delete', [$path]);
     }
 
     /**
      * Delete a directory.
-     *
-     * @param string $dirname
-     *
-     * @return bool
      */
-    public function deleteDir($dirname)
+    public function deleteDirectory(string $path): void
     {
-        return $this->callOnBoth('deleteDir', [$dirname]);
+        $this->callOnBoth('deleteDirectory', [$path]);
     }
 
     /**
      * Create a directory.
-     *
-     * @param string $dirname directory name
-     * @param Config $config
-     *
-     * @return array|false
      */
-    public function createDir($dirname, Config $config)
+    public function createDirectory(string $path, Config $config): void
     {
-        return $this->callOnBoth('createDir', [$dirname, $config]);
+        $this->callOnBoth('createDirectory', [$path, $config]);
     }
 
     /**
      * Set the visibility for a file.
-     *
-     * @param string $path
-     * @param string $visibility
-     *
-     * @return array|false file meta data
      */
-    public function setVisibility($path, $visibility): void
+    public function setVisibility(string $path, string $visibility): void
     {
         $this->callOnBoth('setVisibility', [$path, $visibility]);
     }
@@ -613,7 +497,7 @@ class LocalCacheAdapter extends LocalFilesystemAdapter
     }
 
     /**
-     * do defered write operations
+     * do deferred write operations
      */
     public function __destruct()
     {
