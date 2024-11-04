@@ -20,11 +20,14 @@
 
 namespace oat\flysystem\Adapter;
 
+use GuzzleHttp\Psr7\CachingStream;
+use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\Config;
 use League\Flysystem\Local\LocalFilesystemAdapter;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Class LocalCacheAdapter
@@ -37,13 +40,13 @@ class LocalCacheAdapter implements FilesystemAdapter
 {
     /**
      * remote flysystem adapter
-     * @var FilesystemOperator
+     * @var FilesystemAdapter
      */
     protected $remoteStorage;
 
     /**
      * local flysystem adapter
-     * @var FilesystemOperator
+     * @var FilesystemAdapter
      */
     protected $localStorage;
 
@@ -375,6 +378,7 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function writeStream(string $path, $contents, Config $config): void
     {
+        $contents = new CachingStream(Utils::streamFor($contents));
         $this->remoteStorage->writeStream($path, $contents, $config);
         $this->localStorage->writeStream($path, $this->initStream($contents), $config);
     }
@@ -451,7 +455,11 @@ class LocalCacheAdapter implements FilesystemAdapter
 
     protected function initStream($resource)
     {
-        rewind($resource);
+        if (is_resource($resource)) {
+            rewind($resource);
+        } elseif ($resource instanceof StreamInterface) {
+            $resource->rewind();
+        }
         return $resource;
     }
 

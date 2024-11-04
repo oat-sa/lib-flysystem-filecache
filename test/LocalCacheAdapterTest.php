@@ -9,9 +9,12 @@
 namespace oat\libFlysystemFilecache\test;
 
 
+use GuzzleHttp\Psr7\CachingStream;
+use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
 use PHPUnit\Framework\TestCase;
+use Prophecy\Argument;
 use ReflectionClass;
 use Prophecy\PhpUnit\ProphecyTrait;
 
@@ -429,8 +432,8 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
-        $remoteProphet->writeStream($path, $file, $config);
-        $localProphet->writeStream($path, $file, $config);
+        $remoteProphet->writeStream($path, Argument::any(), $config);
+        $localProphet->writeStream($path, Argument::any(), $config);
 
         $localProphet->fileExists($path)->willReturn(true);
         $localProphet->readStream($path)->willReturn($file);
