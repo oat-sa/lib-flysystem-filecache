@@ -400,7 +400,7 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet->listContents($fixtureDirectory, $fixtureRecursive)->willReturn($fixtureList);
         $remoteMock = $remoteProphet->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, $config);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path', $config);
         $this->assertSame($fixtureList, $this->instance->listContents($fixtureDirectory, $fixtureRecursive));
     }
 
