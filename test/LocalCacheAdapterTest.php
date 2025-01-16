@@ -96,7 +96,7 @@ class LocalCacheAdapterTest extends TestCase
         }
         $remoteMock = $remoteProphet->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
 
         $this->assertSame(
             $expected,
@@ -109,7 +109,7 @@ class LocalCacheAdapterTest extends TestCase
         $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
         $localMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
 
         $this->assertSame($remoteMock, $this->instance->getRemoteStorage());
         $this->assertSame($localMock, $this->instance->getLocalStorage());
@@ -138,7 +138,7 @@ class LocalCacheAdapterTest extends TestCase
         $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
         $localMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
 
         $this->assertSame($this->instance, $this->instance->setSynchronous($value));
         $this->assertSame($expected, $this->instance->getSynchronous());
@@ -197,7 +197,7 @@ class LocalCacheAdapterTest extends TestCase
 
         $remoteMock = $remoteProphet->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
 
         $this->assertSame($expected, $this->invokeProtectedMethod($this->instance, 'callOnBoth', [$method, $args]));
     }
@@ -409,7 +409,7 @@ class LocalCacheAdapterTest extends TestCase
         $remoteMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
         $localMock = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter')->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
 
         $fixtureStream = tmpfile();
         fputs($fixtureStream, 'test1' . "\n" . 'test2');
@@ -441,7 +441,7 @@ class LocalCacheAdapterTest extends TestCase
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
         $this->instance->writeStream($path, $file, $config);
 
         $this->assertSame($returnDist, $this->instance->readStream($path));
@@ -477,7 +477,7 @@ class LocalCacheAdapterTest extends TestCase
         $localMock = $localProphet->reveal();
         $remoteMock = $remoteProphet->reveal();
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, 'path/to/file');
         $config = $this->invokeProtectedMethod($this->instance, 'setConfigFromResult', [$fixtureResult]);
         $this->assertInstanceOf('League\Flysystem\Config', $config);
     }
