@@ -34,7 +34,7 @@ class LocalCacheAdapterTest extends TestCase
 
         $synchronous = true;
 
-        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, $synchronous);
+        $this->instance = new LocalCacheAdapter($remoteMock, $localMock, $synchronous, '/path/to/file');
 
         $this->assertSame($remoteMock, $this->getInaccessibleProperty($this->instance, 'remoteStorage'));
         $this->assertSame($localMock, $this->getInaccessibleProperty($this->instance, 'localStorage'));
