@@ -27,6 +27,7 @@ use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\Config;
 use League\Flysystem\Local\LocalFilesystemAdapter;
+use League\Flysystem\PathPrefixer;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -38,6 +39,8 @@ use Psr\Http\Message\StreamInterface;
  */
 class LocalCacheAdapter implements FilesystemAdapter
 {
+    private PathPrefixer $pathPrefixer;
+
     /**
      * remote flysystem adapter
      * @var FilesystemAdapter
@@ -98,11 +101,13 @@ class LocalCacheAdapter implements FilesystemAdapter
     public function __construct(
         FilesystemAdapter $remoteStorage,
         FilesystemAdapter $localStorage,
+        string $path,
         $synchronous = true
     ) {
         $this->remoteStorage = $remoteStorage;
         $this->localStorage = $localStorage;
         $this->synchronous = boolval($synchronous);
+        $this->pathPrefixer = new PathPrefixer($path, DIRECTORY_SEPARATOR);
     }
 
     /**
@@ -281,7 +286,7 @@ class LocalCacheAdapter implements FilesystemAdapter
                 && ($data = $this->localStorage->read($expectedPath)) !== false
             ) {
                 // In cache.
-                $contentList = json_decode($data['contents'], true);
+                $contentList = json_decode($data, true);
             } else {
                 // Not in cache or could not be read.
                 $contentList = $this->remoteStorage->listContents($path, $deep);
@@ -307,7 +312,7 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     protected function getListContentsCacheExpectedPath($directory, $recursive)
     {
-        $key = $this->buildCacheKey($this->localStorage->getPathPrefix() . $directory . strval($recursive));
+        $key = $this->buildCacheKey($this->pathPrefixer->prefixPath($directory) . strval($recursive));
         $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
 
         return $expectedPath;
@@ -315,7 +320,7 @@ class LocalCacheAdapter implements FilesystemAdapter
 
     protected function getHasDirectoryCacheExpectedPath($path)
     {
-        $key = $this->buildCacheKey($this->localStorage->getPathPrefix() . $path);
+        $key = $this->buildCacheKey($this->pathPrefixer->prefixPath($path));
         $expectedPath = ".oat-lib-flysystem-cache/has-directory-cache/${key}.json";
 
         return $expectedPath;
