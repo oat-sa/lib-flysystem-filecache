@@ -312,7 +312,7 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     protected function getListContentsCacheExpectedPath($directory, $recursive)
     {
-        $key = $this->buildCacheKey($this->pathPrefixer->prefixPath($directory));
+        $key = $this->buildCacheKey($this->pathPrefixer->prefixPath($directory) . strval($recursive));
         $expectedPath = ".oat-lib-flysystem-cache/list-contents-cache/${key}.json";
 
         return $expectedPath;
