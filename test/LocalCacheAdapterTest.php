@@ -14,6 +14,7 @@ use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\TextUI\XmlConfiguration\File;
 use Prophecy\Argument;
 use ReflectionClass;
 use Prophecy\PhpUnit\ProphecyTrait;
@@ -260,6 +261,14 @@ class LocalCacheAdapterTest extends TestCase
 
         $localProphet->fileExists($path)->willReturn(false !== $localResult);
 
+        $localLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $localLastModified->lastModified()->willReturn(2);
+        $remoteLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $remoteLastModified->lastModified()->willReturn(1);
+        
+        $localProphet->lastModified($path)->willReturn($localLastModified);
+        $remoteProphet->lastModified($path)->willReturn($remoteLastModified);
+
         if ($localResult === false) {
             $remoteProphet->read($path)->willReturn($remoteResult['contents'] ?? $remoteResult);
         } else {
@@ -342,6 +351,15 @@ class LocalCacheAdapterTest extends TestCase
     {
         $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+
+        $localLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $localLastModified->lastModified()->willReturn(2);
+        $remoteLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $remoteLastModified->lastModified()->willReturn(1);
+
+        $localProphet->lastModified($path)->willReturn($localLastModified);
+        $remoteProphet->lastModified($path)->willReturn($remoteLastModified);
+
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
         $this->instance = $this->createPartialMock(
@@ -430,6 +448,15 @@ class LocalCacheAdapterTest extends TestCase
 
         $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
         $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+
+        $localLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $localLastModified->lastModified()->willReturn(2);
+        $remoteLastModified = $this->prophesize('League\Flysystem\FileAttributes');
+        $remoteLastModified->lastModified()->willReturn(1);
+        
+        $localProphet->lastModified($path)->willReturn($localLastModified);
+        $remoteProphet->lastModified($path)->willReturn($remoteLastModified);
+        
         $config = $this->prophesize('League\Flysystem\Config')->reveal();
 
         $remoteProphet->writeStream($path, Argument::any(), $config);
