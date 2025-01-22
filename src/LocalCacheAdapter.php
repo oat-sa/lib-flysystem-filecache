@@ -226,7 +226,7 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function read(string $path): string
     {
-        if (($this->localStorage->fileExists($path)) !== false) {
+        if (($this->localStorage->fileExists($path)) !== false && $this->isLocalLastModified($path)) {
             return $this->localStorage->read($path);
         }
         $result = $this->remoteStorage->read($path);
@@ -246,7 +246,7 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function readStream(string $path)
     {
-        if ($this->localStorage->fileExists($path)) {
+        if ($this->localStorage->fileExists($path) && $this->isLocalLastModified($path)) {
             $result = $this->localStorage->readStream($path);
             if (is_resource($result['stream'] ?? $result)) {
                 return $result['stream'] ?? $result;
@@ -299,6 +299,13 @@ class LocalCacheAdapter implements FilesystemAdapter
         }
 
         return $contentList;
+    }
+
+    protected function isLocalLastModified($path): bool
+    {
+        $localLastModified = $this->localStorage->lastModified($path)->lastModified();
+        $remoteLastModified = $this->remoteStorage->lastModified($path)->lastModified();
+        return $localLastModified > $remoteLastModified;
     }
 
     /**
