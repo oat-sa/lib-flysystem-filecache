@@ -489,6 +489,7 @@ class LocalCacheAdapterTest extends TestCase
         $remoteProphet->writeStream($path, Argument::any(), $config)->will(function (array $arguments) use ($contents, $testCase) {
             $stream = Utils::streamFor($arguments[1]);
             $testCase->assertSame($contents, $stream->getContents());
+            $stream->close();
         });
         $localProphet->writeStream($path, Argument::any(), $config)->will(function (array $arguments) use ($contents, $testCase) {
             $testCase->assertIsResource($arguments[1]);
