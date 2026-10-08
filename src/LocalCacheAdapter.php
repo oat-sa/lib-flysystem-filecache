@@ -392,7 +392,7 @@ class LocalCacheAdapter implements FilesystemAdapter
     {
         $contents = new CachingStream(Utils::streamFor($contents));
         $this->remoteStorage->writeStream($path, $contents, $config);
-        $this->localStorage->writeStream($path, $this->initStream($contents), $config);
+        $this->localStorage->writeStream($path, $this->initStream($contents->detach()), $config);
     }
 
     /**
