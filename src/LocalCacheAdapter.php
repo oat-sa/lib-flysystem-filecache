@@ -39,6 +39,8 @@ class LocalCacheAdapter implements FilesystemAdapter
 {
     private PathPrefixer $pathPrefixer;
 
+    private bool $debugMediaCache = false;
+
     /**
      * remote flysystem adapter
      * @var FilesystemAdapter
@@ -106,6 +108,7 @@ class LocalCacheAdapter implements FilesystemAdapter
         $this->localStorage = $localStorage;
         $this->synchronous = boolval($synchronous);
         $this->pathPrefixer = new PathPrefixer($path, DIRECTORY_SEPARATOR);
+        $this->debugMediaCache = $path === '/var/cache/tao/mediaManager';
     }
 
     /**
@@ -244,20 +247,34 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function readStream(string $path)
     {
-        if ($this->localStorage->fileExists($path) && $this->isLocalLastModified($path)) {
+        $localExists = $this->localStorage->fileExists($path);
+        $localIsCurrent = $localExists && $this->isLocalLastModified($path);
+        $this->trace('read.select', $path, null, [
+            'local_exists' => $localExists,
+            'local_is_current' => $localIsCurrent,
+            'local_size' => $this->getLocalFileSize($path),
+        ]);
+
+        if ($localIsCurrent) {
             $result = $this->localStorage->readStream($path);
+            $this->trace('read.local', $path, $result);
             if (is_resource($result['stream'] ?? $result)) {
                 return $result['stream'] ?? $result;
             }
         }
         $result = $this->remoteStorage->readStream($path);
+        $this->trace('read.remote', $path, $result);
         if (is_resource($result)) {
             if ($this->synchronous) {
                 $resource = $result['stream'] ?? $result;
                 $config = $this->setConfigFromResult($this->transformResultToConfigArray($path, $result));
                 $this->localStorage->writeStream($path, $resource, $config);
+                $this->trace('read.cache.write', $path, $resource, [
+                    'local_size' => $this->getLocalFileSize($path),
+                ]);
                 $result = $this->localStorage->readStream($path);
                 $result = $result['stream'] ?? $result;
+                $this->trace('read.cache.return', $path, $result);
             } elseif (is_resource($result)) {
                 $this->deferedSave[] = $this->transformResultToConfigArray($path, $result);
             }
@@ -388,8 +405,15 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function writeStream(string $path, $contents, Config $config): void
     {
+        $this->trace('write.start', $path, $contents);
         $this->localStorage->writeStream($path, $contents, $config);
-        $this->remoteStorage->writeStream($path, $this->initStream($contents), $config);
+        $this->trace('write.local.complete', $path, $contents, [
+            'local_size' => $this->getLocalFileSize($path),
+        ]);
+        $contents = $this->initStream($contents);
+        $this->trace('write.remote.start', $path, $contents);
+        $this->remoteStorage->writeStream($path, $contents, $config);
+        $this->trace('write.remote.complete', $path, $contents);
     }
 
     /**
@@ -470,6 +494,46 @@ class LocalCacheAdapter implements FilesystemAdapter
             $resource->rewind();
         }
         return $resource;
+    }
+
+    private function getLocalFileSize(string $path): ?int
+    {
+        if (!$this->debugMediaCache) {
+            return null;
+        }
+
+        try {
+            return $this->localStorage->fileSize($path)->fileSize();
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function trace(string $event, string $path, $stream, array $context = []): void
+    {
+        if (!$this->debugMediaCache) {
+            return;
+        }
+
+        $stream = $stream['stream'] ?? $stream;
+        $context += [
+            'event' => 'AUT-4721',
+            'operation' => $event,
+            'path' => $path,
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'stream_is_resource' => is_resource($stream),
+        ];
+
+        if (is_resource($stream)) {
+            $stat = @fstat($stream);
+            $context += [
+                'stream_position' => @ftell($stream),
+                'stream_eof' => @feof($stream),
+                'stream_size' => $stat['size'] ?? null,
+            ];
+        }
+
+        error_log(json_encode($context));
     }
 
     /**
