@@ -9,7 +9,6 @@
 namespace oat\libFlysystemFilecache\test;
 
 
-use GuzzleHttp\Psr7\CachingStream;
 use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
@@ -398,6 +397,37 @@ class LocalCacheAdapterTest extends TestCase
         $this->setInaccessibleProperty($this->instance, 'deferedSave', []);
     }
 
+    public function testReadStreamRewindsExhaustedRemoteStreamBeforeCaching()
+    {
+        $path = 'test.txt';
+        $cachePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('flysystem-cache-', true);
+        mkdir($cachePath);
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'content');
+
+        $remote = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remote->readStream($path)->willReturn($stream);
+
+        try {
+            $adapter = new LocalCacheAdapter(
+                $remote->reveal(),
+                new \League\Flysystem\Local\LocalFilesystemAdapter($cachePath),
+                $cachePath
+            );
+
+            $cachedStream = $adapter->readStream($path);
+
+            $this->assertSame('content', stream_get_contents($cachedStream));
+            $this->assertSame('content', file_get_contents($cachePath . DIRECTORY_SEPARATOR . $path));
+
+            fclose($cachedStream);
+        } finally {
+            fclose($stream);
+            unlink($cachePath . DIRECTORY_SEPARATOR . $path);
+            rmdir($cachePath);
+        }
+    }
+
     public function testListContents()
     {
         $fixtureDirectory = '/tmp';
@@ -472,6 +502,37 @@ class LocalCacheAdapterTest extends TestCase
         $this->instance->writeStream($path, $file, $config);
 
         $this->assertSame($returnDist, $this->instance->readStream($path));
+    }
+
+    public function testWriteStreamPassesCachedResourceToLocalStorage()
+    {
+        $path = 'test1.txt';
+        $contents = 'persisted content';
+        $source = tmpfile();
+        fwrite($source, $contents);
+        rewind($source);
+
+        $config = $this->prophesize('League\Flysystem\Config')->reveal();
+        $remoteProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $localProphet = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $testCase = $this;
+
+        $remoteProphet->writeStream($path, Argument::any(), $config)->will(function (array $arguments) use ($contents, $testCase) {
+            $stream = Utils::streamFor($arguments[1]);
+            $testCase->assertSame($contents, $stream->getContents());
+            $stream->close();
+        });
+        $localProphet->writeStream($path, Argument::any(), $config)->will(function (array $arguments) use ($contents, $testCase) {
+            $testCase->assertIsResource($arguments[1]);
+            $testCase->assertSame($contents, stream_get_contents($arguments[1]));
+        });
+
+        $this->instance = new LocalCacheAdapter(
+            $remoteProphet->reveal(),
+            $localProphet->reveal(),
+            'path/to/file'
+        );
+        $this->instance->writeStream($path, $source, $config);
     }
 
     public function testSetConfigFromResult()

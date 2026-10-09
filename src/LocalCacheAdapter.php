@@ -20,8 +20,6 @@
 
 namespace oat\flysystem\Adapter;
 
-use GuzzleHttp\Psr7\CachingStream;
-use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemOperator;
@@ -257,7 +255,7 @@ class LocalCacheAdapter implements FilesystemAdapter
             if ($this->synchronous) {
                 $resource = $result['stream'] ?? $result;
                 $config = $this->setConfigFromResult($this->transformResultToConfigArray($path, $result));
-                $this->localStorage->writeStream($path, $resource, $config);
+                $this->localStorage->writeStream($path, $this->initStream($resource), $config);
                 $result = $this->localStorage->readStream($path);
                 $result = $result['stream'] ?? $result;
             } elseif (is_resource($result)) {
@@ -390,9 +388,8 @@ class LocalCacheAdapter implements FilesystemAdapter
      */
     public function writeStream(string $path, $contents, Config $config): void
     {
-        $contents = new CachingStream(Utils::streamFor($contents));
-        $this->remoteStorage->writeStream($path, $contents, $config);
-        $this->localStorage->writeStream($path, $this->initStream($contents), $config);
+        $this->localStorage->writeStream($path, $contents, $config);
+        $this->remoteStorage->writeStream($path, $this->initStream($contents), $config);
     }
 
     /**
