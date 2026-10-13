@@ -257,7 +257,7 @@ class LocalCacheAdapter implements FilesystemAdapter
             if ($this->synchronous) {
                 $resource = $result['stream'] ?? $result;
                 $config = $this->setConfigFromResult($this->transformResultToConfigArray($path, $result));
-                $this->localStorage->writeStream($path, $resource, $config);
+                $this->localStorage->writeStream($path, $this->initStream($resource), $config);
                 $result = $this->localStorage->readStream($path);
                 $result = $result['stream'] ?? $result;
             } elseif (is_resource($result)) {

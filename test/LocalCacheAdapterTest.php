@@ -9,7 +9,6 @@
 namespace oat\libFlysystemFilecache\test;
 
 
-use GuzzleHttp\Psr7\CachingStream;
 use GuzzleHttp\Psr7\Utils;
 use League\Flysystem\FileAttributes;
 use oat\flysystem\Adapter\LocalCacheAdapter;
@@ -396,6 +395,37 @@ class LocalCacheAdapterTest extends TestCase
         $this->assertEquals($expected['stream'] ?? $expected, $this->instance->readStream($path));
         $this->assertSame($expectedSave, $this->getInaccessibleProperty($this->instance, 'deferedSave'));
         $this->setInaccessibleProperty($this->instance, 'deferedSave', []);
+    }
+
+    public function testReadStreamRewindsExhaustedRemoteStreamBeforeCaching()
+    {
+        $path = 'test.txt';
+        $cachePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('flysystem-cache-', true);
+        mkdir($cachePath);
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, 'content');
+
+        $remote = $this->prophesize('League\Flysystem\Local\LocalFilesystemAdapter');
+        $remote->readStream($path)->willReturn($stream);
+
+        try {
+            $adapter = new LocalCacheAdapter(
+                $remote->reveal(),
+                new \League\Flysystem\Local\LocalFilesystemAdapter($cachePath),
+                $cachePath
+            );
+
+            $cachedStream = $adapter->readStream($path);
+
+            $this->assertSame('content', stream_get_contents($cachedStream));
+            $this->assertSame('content', file_get_contents($cachePath . DIRECTORY_SEPARATOR . $path));
+
+            fclose($cachedStream);
+        } finally {
+            fclose($stream);
+            unlink($cachePath . DIRECTORY_SEPARATOR . $path);
+            rmdir($cachePath);
+        }
     }
 
     public function testListContents()
